@@ -31,6 +31,7 @@ import { useSubscription } from "@/components/subscription-provider"
 import { apiClient } from "@/utils/api-client"
 import { useToast } from "@/components/ui/use-toast"
 import { SupportModal } from "@/components/support-modal"
+import { UserAvatar } from "./user-avatar"
 
 interface SidebarProps {
   isOpen: boolean
@@ -325,20 +326,7 @@ export function Sidebar({ isOpen = true, onConversationSelect, currentConversati
             <DropdownMenuTrigger className="w-full focus:outline-none">
               <div className="flex w-full items-center justify-between px-3 py-2 hover:bg-[#1a1a1a] transition-colors">
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-md overflow-hidden bg-gray-800 flex items-center justify-center">
-                    {profileImage ? (
-                      <img
-                        src={profileImage || "/placeholder.svg"}
-                        alt="Profile"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <img
-                      src={profileImage || "/placeholder.svg"}
-                      alt="Profile"
-                      className="h-full w-full object-cover"
-                    />                    )}
-                  </div>
+                  <UserAvatar />
                   <div className="flex flex-col items-start">
                     <span className="text-sm text-white">{username}</span>
                     <span className="text-xs text-emerald-400">
@@ -353,21 +341,7 @@ export function Sidebar({ isOpen = true, onConversationSelect, currentConversati
               <div className="px-4 py-2">
                 <p className="text-sm text-gray-400">{userEmail}</p>
                 <div className="flex items-center gap-2 mt-1">
-                  <div className="h-8 w-8 rounded-md overflow-hidden bg-gray-800 flex items-center justify-center">
-                    {profileImage ? (
-                      <img
-                        src={profileImage || "/placeholder.svg"}
-                        alt="Profile"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <img
-                      src={profileImage || "/placeholder.svg"}
-                      alt="Profile"
-                      className="h-full w-full object-cover"
-                    />
-                    )}
-                  </div>
+                  <UserAvatar />
                   <div className="flex flex-col items-start">
                     <span className="text-sm text-white">{username}</span>
                     <span className="text-xs text-emerald-400">{currentPlan?.name || "Free"}</span>
@@ -406,42 +380,14 @@ export function Sidebar({ isOpen = true, onConversationSelect, currentConversati
           <DropdownMenu>
             <DropdownMenuTrigger className="focus:outline-none w-full">
               <div className="flex flex-col items-center p-2">
-                <div className="h-8 w-8 rounded-md overflow-hidden bg-gray-800 mb-1 flex items-center justify-center">
-                  {profileImage ? (
-                    <img
-                      src={profileImage || "/placeholder.svg"}
-                      alt="Profile"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <img
-                    src={profileImage || "/placeholder.svg"}
-                    alt="Profile"
-                    className="h-full w-full object-cover"
-                  />
-                  )}
-                </div>
+                <UserAvatar />
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-64 bg-black border-[#333] text-white" align="end">
               <div className="px-4 py-2">
                 <p className="text-sm text-gray-400">{userEmail}</p>
                 <div className="flex items-center gap-2 mt-1">
-                  <div className="h-8 w-8 rounded-md overflow-hidden bg-gray-800 flex items-center justify-center">
-                    {profileImage ? (
-                      <img
-                        src={profileImage || "/placeholder.svg"}
-                        alt="Profile"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <img
-                        src={profileImage || "/placeholder.svg"}
-                        alt="Profile"
-                        className="h-full w-full object-cover"
-                      />
-                    )}
-                  </div>
+                  <UserAvatar />
                   <div className="flex flex-col items-start">
                     <span className="text-sm text-white">{username}</span>
                     <span className="text-xs text-emerald-400">{currentPlan?.name || "Free"}</span>

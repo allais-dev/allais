@@ -19,6 +19,8 @@ import {
   Loader2,
   FileSearch,
   BookOpen,
+  File,
+  User,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -28,17 +30,32 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { ErrorBoundary } from "./error-boundary"
 import { useChat } from "@/contexts/chat-context"
 import { RetryButton } from "./retry-button"
+import { EmojiPicker } from "./emoji-picker"
 
 // Add this to the top of your chat-interface.tsx file
 // This will ensure the styles are applied to the chat messages
 
 import "./message-styles.css"
 
+// User Avatar component
+export function UserAvatar() {
+  return (
+    <div className="h-8 w-8 rounded-md overflow-hidden bg-[#0f0f10] border border-[#333333] flex items-center justify-center">
+      <User className="h-5 w-5 text-gray-400" />
+    </div>
+  )
+}
+
 // Message display component with error handling
 function MessageDisplay({ message }: { message: any }) {
-  const { streamingMessageId, failedMessages, retryFailedMessage } = useChat()
-  const isStreaming = message.id === streamingMessageId
-  const isFailed = failedMessages.includes(message.id)
+  const { isLoading, retryFailedMessage } = useChat()
+  const isStreaming = message.isStreaming
+  const isFailed = message.error
+
+  // Debug log to check message role
+  console.log(
+    `Rendering message: ${message.id.substring(0, 8)}, role: ${message.role}, content: ${message.content.substring(0, 20)}...`,
+  )
 
   return (
     <div
@@ -63,9 +80,21 @@ function MessageDisplay({ message }: { message: any }) {
           </div>
         </div>
       ) : message.role === "user" ? (
-        <div className="max-w-[80%] break-words rounded-lg bg-[#1a1a1a] text-white" style={{ padding: "12px 15px" }}>
-          <div className="whitespace-pre-wrap text-sm">{message.content}</div>
-          <RetryButton messageId={message.id} />
+        <div className="flex w-full justify-end">
+          <div className="break-words rounded-lg bg-[#1a1a1a] text-white" style={{ padding: "12px 15px" }}>
+            <div className="whitespace-pre-wrap text-sm">{message.content}</div>
+            {message.files && message.files.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {message.files.map((file: File, index: number) => (
+                  <div key={index} className="flex items-center rounded bg-[#333] px-2 py-1 text-xs">
+                    <File className="mr-1 h-3 w-3" />
+                    <span className="max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap">{file.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {isFailed && <RetryButton messageId={message.id} />}
+          </div>
         </div>
       ) : (
         <div className="w-full break-words text-white">
@@ -99,16 +128,106 @@ function MessageDisplay({ message }: { message: any }) {
   )
 }
 
+// Chat messages component
+function ChatMessages() {
+  const { messages, isLoading, currentConversationId } = useChat()
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [shouldHighlight, setShouldHighlight] = useState(false)
+  const [hasMessages, setHasMessages] = useState(false)
+  const [hasConversationId, setHasConversationId] = useState(false)
+
+  // Update hasMessages when messages changes
+  useEffect(() => {
+    setHasMessages(messages.length > 0)
+    setHasConversationId(!!currentConversationId)
+
+    // Debug log all messages
+    if (messages.length > 0) {
+      console.log(
+        "Current messages in state:",
+        messages.map((m) => ({
+          id: m.id.substring(0, 8),
+          role: m.role,
+          content: m.content.substring(0, 20) + "...",
+        })),
+      )
+    }
+  }, [messages.length, currentConversationId, messages])
+
+  // Scroll to bottom when messages change or during streaming
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages])
+
+  // Highlight code blocks
+  useEffect(() => {
+    setShouldHighlight(true)
+  }, [messages])
+
+  useEffect(() => {
+    if (shouldHighlight && typeof window !== "undefined" && window.hljs) {
+      setTimeout(() => {
+        try {
+          window.hljs.highlightAll()
+        } catch (error) {
+          console.error("Error highlighting code blocks:", error)
+        }
+      }, 100)
+      setShouldHighlight(false)
+    }
+  }, [shouldHighlight])
+
+  // Only show loading indicator when initially loading a conversation, not when sending messages
+  if (isLoading && messages.length === 0) {
+    return <LoadingIndicator />
+  }
+
+  // Don't show the "empty conversation" message if we have messages
+  if (hasMessages) {
+    return (
+      <div className="mx-auto w-full max-w-3xl">
+        <div className="flex flex-col space-y-4">
+          {messages.map((message) => (
+            <ErrorBoundary key={message.id}>
+              <MessageDisplay message={message} />
+            </ErrorBoundary>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+      </div>
+    )
+  }
+
+  // Show empty conversation message only if we have a conversation ID but no messages
+  if (hasConversationId && !hasMessages) {
+    return (
+      <div className="mx-auto w-full max-w-3xl">
+        <div className="flex flex-col items-center justify-center py-8">
+          <p className="text-center text-gray-400">This conversation is empty. Start chatting below!</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Default case - no messages, no conversation ID
+  return <Suggestions />
+}
+
+// Loading indicator component
+function LoadingIndicator() {
+  return (
+    <div className="flex items-center justify-center py-8">
+      <div className="flex flex-col items-center">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <p className="mt-4 text-sm text-gray-400">Loading conversation...</p>
+      </div>
+    </div>
+  )
+}
+
 // Suggestions component
 function Suggestions() {
-  const { sendMessage, conversation } = useChat()
-  const hasMessages = conversation.messages.length > 0
-  const hasConversationId = !!conversation.id
-
-  // If there are messages or we have a conversation with an ID, don't show suggestions
-  if (hasMessages || hasConversationId) {
-    return null
-  }
+  const { sendMessage } = useChat()
 
   const handleSuggestionClick = (suggestion: string) => {
     sendMessage(suggestion)
@@ -165,153 +284,68 @@ function Suggestions() {
   )
 }
 
-// Loading indicator component
-function LoadingIndicator() {
-  return (
-    <div className="flex items-center justify-center py-8">
-      <div className="flex flex-col items-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-        <p className="mt-4 text-sm text-gray-400">Loading conversation...</p>
-      </div>
-    </div>
-  )
-}
-
-// Chat messages component
-function ChatMessages() {
-  const { conversation, isStreaming, streamingMessageId, isLoading } = useChat()
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const [shouldHighlight, setShouldHighlight] = useState(false)
-  const [hasMessages, setHasMessages] = useState(conversation.messages.length > 0)
-  const [hasConversationId, setHasConversationId] = useState(!!conversation.id)
-
-  // Update hasMessages when conversation.messages changes
-  useEffect(() => {
-    setHasMessages(conversation.messages.length > 0)
-    setHasConversationId(!!conversation.id)
-  }, [conversation.messages.length, conversation.id])
-
-  // If there are no messages and no conversation ID, don't show this component
-  const shouldRenderMessages = hasMessages || hasConversationId
-
-  // Scroll to bottom when messages change or during streaming
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-
-    // Debug message ordering
-    if (conversation.messages.length > 0) {
-      console.log(
-        "Messages in current order:",
-        conversation.messages.map((m) => ({
-          id: m.id,
-          role: m.role,
-          timestamp: m.timestamp,
-          content: m.content.substring(0, 20) + "...",
-        })),
-      )
-    }
-  }, [conversation.messages, isStreaming])
-
-  // Highlight code blocks
-  useEffect(() => {
-    setShouldHighlight(true)
-  }, [conversation.messages])
-
-  useEffect(() => {
-    if (shouldHighlight && typeof window !== "undefined" && window.hljs) {
-      setTimeout(() => {
-        try {
-          window.hljs.highlightAll()
-        } catch (error) {
-          console.error("Error highlighting code blocks:", error)
-        }
-      }, 100)
-      setShouldHighlight(false)
-    }
-  }, [shouldHighlight])
-
-  // Show loading indicator if loading
-  if (isLoading) {
-    return <LoadingIndicator />
-  }
-
-  // Don't show the "empty conversation" message if we have messages
-  // This fixes the issue where the message appears when first sending a message
-  if (hasMessages) {
-    return (
-      <div className="mx-auto w-full max-w-3xl">
-        <div className="flex flex-col space-y-4">
-          {conversation.messages.map((message) => (
-            <ErrorBoundary key={message.id}>
-              <MessageDisplay message={message} />
-            </ErrorBoundary>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
-    )
-  }
-
-  // Show empty conversation message only if we have a conversation ID but no messages
-  // AND we're not currently streaming (which would mean a message is being sent)
-  if (hasConversationId && !hasMessages && !isStreaming) {
-    return (
-      <div className="mx-auto w-full max-w-3xl">
-        <div className="flex flex-col items-center justify-center py-8">
-          <p className="text-center text-gray-400">This conversation is empty. Start chatting below!</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Default case - no messages, no conversation ID
-  return null
-}
-
 // Chat input component
 function ChatInput() {
   const {
     sendMessage,
-    isStreaming,
-    selectedModel,
-    changeModel,
-    hasReachedLimit,
-    isFreePlan,
-    networkStatus,
-    cancelRequest,
-    dailyMessageCount,
-    conversation,
     isLoading,
+    selectedModel,
+    setSelectedModel,
+    hasReachedDailyLimit,
+    dailyMessageCount,
+    maxDailyMessages,
+    currentConversationId,
   } = useChat()
   const [inputValue, setInputValue] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [networkStatus, setNetworkStatus] = useState<"online" | "offline">("online")
   const inputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const inputContainerRef = useRef<HTMLDivElement>(null)
+  const emojiPickerRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
   const conversationId = searchParams.get("conversation")
 
+  // Check network status
+  useEffect(() => {
+    const handleOnline = () => setNetworkStatus("online")
+    const handleOffline = () => setNetworkStatus("offline")
+
+    window.addEventListener("online", handleOnline)
+    window.addEventListener("offline", handleOffline)
+
+    return () => {
+      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("offline", handleOffline)
+    }
+  }, [])
+
   // Function to handle sending messages
   const handleSendMessage = useCallback(
     async (content: string) => {
-      if (!content.trim()) return
+      if (!content.trim() && selectedFiles.length === 0) return
 
       setIsSubmitting(true)
 
       try {
-        // Send the message
-        await sendMessage(content.trim())
+        // Send the message with files
+        await sendMessage(content.trim(), selectedFiles.length > 0 ? [...selectedFiles] : undefined)
+        // Clear selected files after sending
+        setSelectedFiles([])
       } finally {
         // Clear input immediately for better UX
         setInputValue("")
         setIsSubmitting(false)
       }
     },
-    [sendMessage],
+    [sendMessage, selectedFiles],
   )
 
   const handleSend = () => {
-    if (inputValue.trim()) {
+    if (inputValue.trim() || selectedFiles.length > 0) {
       handleSendMessage(inputValue)
     }
   }
@@ -323,24 +357,62 @@ function ChatInput() {
     }
   }
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files)
+      setSelectedFiles((prev) => [...prev, ...filesArray])
+      // Reset the file input so the same file can be selected again
+      e.target.value = ""
+    }
+  }
+
+  const handleFileButtonClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const removeFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleEmojiSelect = (emoji: string) => {
+    setInputValue((prev) => prev + emoji)
+    setShowEmojiPicker(false)
+    // Focus the input after selecting an emoji
+    inputRef.current?.focus()
+  }
+
   // Focus input on mount
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
 
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    if (!showEmojiPicker) return
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (emojiPickerRef.current && event.target instanceof Node && !emojiPickerRef.current.contains(event.target)) {
+        setShowEmojiPicker(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [showEmojiPicker])
+
   // Disable input during loading or streaming
-  const isInputDisabled = isLoading || isStreaming || (hasReachedLimit && isFreePlan()) || networkStatus === "offline"
+  const isInputDisabled = isLoading || hasReachedDailyLimit || networkStatus === "offline"
 
   return (
     <div className="p-4 flex flex-col items-center">
-      {isFreePlan() && (
+      {hasReachedDailyLimit && (
         <div className="mb-2 flex items-center justify-between rounded-md bg-gray-800 px-3 py-2 text-xs w-full max-w-3xl mx-auto">
           <div className="flex items-center">
             <Lock className="mr-1.5 h-3.5 w-3.5 text-gray-400" />
             <span className="text-gray-300">
-              {hasReachedLimit
-                ? `Daily limit reached: ${dailyMessageCount}/10 messages`
-                : `Free plan: ${dailyMessageCount}/10 messages used today`}
+              {`Daily limit reached: ${dailyMessageCount}/${maxDailyMessages} messages`}
             </span>
           </div>
           <Button
@@ -354,6 +426,24 @@ function ChatInput() {
         </div>
       )}
 
+      {/* Hidden file input */}
+      <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" multiple />
+
+      {/* Selected files display */}
+      {selectedFiles.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-2 w-full max-w-3xl mx-auto">
+          {selectedFiles.map((file, index) => (
+            <div key={index} className="flex items-center rounded bg-[#1a1a1a] px-2 py-1 text-xs text-white">
+              <File className="mr-1 h-3 w-3" />
+              <span className="max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap">{file.name}</span>
+              <button type="button" onClick={() => removeFile(index)} className="ml-1 rounded-full p-1 hover:bg-[#333]">
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div
         ref={inputContainerRef}
         className="flex flex-wrap items-center rounded-lg border border-[#1a1a1a] bg-[#1a1a1a] px-4 py-2 w-full max-w-3xl mx-auto"
@@ -364,7 +454,7 @@ function ChatInput() {
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={hasReachedLimit && isFreePlan() ? "Upgrade to send more messages" : "Ask a follow up..."}
+          placeholder={hasReachedDailyLimit ? "Upgrade to send more messages" : "Ask a follow up..."}
           className="min-w-[150px] flex-1 border-0 bg-transparent text-sm text-white shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
           disabled={isInputDisabled}
         />
@@ -372,15 +462,24 @@ function ChatInput() {
           <button
             className="rounded p-2 transition-colors duration-200 hover:bg-[#1a1a1a] hover:text-white"
             disabled={isInputDisabled}
+            onClick={handleFileButtonClick}
           >
             <Paperclip className={`h-5 w-5 ${isInputDisabled ? "text-gray-600" : "text-gray-400"}`} />
           </button>
-          <button
-            className="rounded p-2 transition-colors duration-200 hover:bg-[#1a1a1a] hover:text-white"
-            disabled={isInputDisabled}
-          >
-            <SmilePlus className={`h-5 w-5 ${isInputDisabled ? "text-gray-600" : "text-gray-400"}`} />
-          </button>
+          <div className="relative" ref={emojiPickerRef}>
+            <button
+              className="rounded p-2 transition-colors duration-200 hover:bg-[#1a1a1a] hover:text-white"
+              disabled={isInputDisabled}
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            >
+              <SmilePlus className={`h-5 w-5 ${isInputDisabled ? "text-gray-600" : "text-gray-400"}`} />
+            </button>
+            {showEmojiPicker && (
+              <div className="absolute bottom-full right-0 mb-2 z-50">
+                <EmojiPicker onEmojiSelect={handleEmojiSelect} />
+              </div>
+            )}
+          </div>
           <div className="mx-1 h-6 w-px bg-[#333]"></div>
           <div className="flex flex-shrink-0 items-center gap-2">
             <DropdownMenu>
@@ -402,42 +501,34 @@ function ChatInput() {
                 className="z-[100] min-w-[8rem] bg-gray-900 text-white border border-[#333]"
               >
                 <DropdownMenuItem
-                  onSelect={() => changeModel("ChatGPT")}
+                  onSelect={() => setSelectedModel("ChatGPT")}
                   className={`cursor-pointer ${selectedModel === "ChatGPT" ? "bg-black/40 text-green-400" : ""} hover:bg-[#1a1a1a] focus:bg-[#1a1a1a]`}
                 >
                   ChatGPT
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onSelect={() => changeModel("Gemini")}
+                  onSelect={() => setSelectedModel("Gemini")}
                   className={`cursor-pointer ${selectedModel === "Gemini" ? "bg-black/40 text-blue-400" : ""} hover:bg-[#1a1a1a] focus:bg-[#1a1a1a]`}
                 >
                   Gemini
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            {isStreaming ? (
-              <button
-                onClick={cancelRequest}
-                className="rounded p-2 transition-colors duration-200 hover:bg-red-900/20 text-red-400"
-                title="Cancel request"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            ) : (
-              <button
-                onClick={handleSend}
-                disabled={!inputValue.trim() || isSubmitting || isInputDisabled}
-                className={`rounded p-2 transition-colors duration-200 hover:bg-[#1a1a1a] hover:text-white ${
-                  !inputValue.trim() || isSubmitting || isInputDisabled ? "opacity-50" : ""
-                }`}
-              >
-                {isSubmitting ? (
-                  <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
-                ) : (
-                  <Send className={`h-5 w-5 ${isInputDisabled ? "text-gray-600" : "text-gray-400"}`} />
-                )}
-              </button>
-            )}
+            <button
+              onClick={handleSend}
+              disabled={(!inputValue.trim() && selectedFiles.length === 0) || isSubmitting || isInputDisabled}
+              className={`rounded p-2 transition-colors duration-200 hover:bg-[#1a1a1a] hover:text-white ${
+                (!inputValue.trim() && selectedFiles.length === 0) || isSubmitting || isInputDisabled
+                  ? "opacity-50"
+                  : ""
+              }`}
+            >
+              {isSubmitting ? (
+                <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+              ) : (
+                <Send className={`h-5 w-5 ${isInputDisabled ? "text-gray-600" : "text-gray-400"}`} />
+              )}
+            </button>
           </div>
         </div>
       </div>
@@ -450,7 +541,20 @@ function ChatInput() {
 
 // Network status alert
 function NetworkAlert() {
-  const { networkStatus } = useChat()
+  const [networkStatus, setNetworkStatus] = useState<"online" | "offline">("online")
+
+  useEffect(() => {
+    const handleOnline = () => setNetworkStatus("online")
+    const handleOffline = () => setNetworkStatus("offline")
+
+    window.addEventListener("online", handleOnline)
+    window.addEventListener("offline", handleOffline)
+
+    return () => {
+      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("offline", handleOffline)
+    }
+  }, [])
 
   if (networkStatus === "online") return null
 
@@ -468,16 +572,29 @@ function NetworkAlert() {
 
 // Error alert
 function ErrorAlert() {
-  const { error, loadConversation, conversation } = useChat()
+  const [error, setError] = useState<string | null>(null)
   const [isRetrying, setIsRetrying] = useState(false)
+  const { loadConversation, currentConversationId } = useChat()
+
+  useEffect(() => {
+    const handleError = (e: CustomEvent) => {
+      setError(e.detail.message || "Something went wrong")
+    }
+
+    window.addEventListener("chat-error" as any, handleError)
+    return () => {
+      window.removeEventListener("chat-error" as any, handleError)
+    }
+  }, [])
 
   if (!error) return null
 
   const handleRetry = async () => {
     setIsRetrying(true)
-    if (conversation.id) {
-      await loadConversation(conversation.id)
+    if (currentConversationId) {
+      await loadConversation(currentConversationId)
     }
+    setError(null)
     setIsRetrying(false)
   }
 
@@ -519,7 +636,7 @@ export function ChatInterface() {
 
 // Inner chat interface component (uses context)
 function ChatInterfaceInner() {
-  const { conversation } = useChat()
+  const { messages, currentConversationId } = useChat()
   const [renderKey, setRenderKey] = useState(0)
   const [hasMounted, setHasMounted] = useState(false)
 
@@ -529,8 +646,8 @@ function ChatInterfaceInner() {
 
   // Debug logging
   useEffect(() => {
-    console.log("ChatInterfaceInner rendering with conversation:", conversation)
-  }, [conversation])
+    console.log("ChatInterfaceInner rendering with messages:", messages)
+  }, [messages])
 
   // Force re-render if needed
   useEffect(() => {
@@ -559,7 +676,6 @@ function ChatInterfaceInner() {
           <ChatMessages />
 
           {/* Show Suggestions only if we don't have messages and don't have a conversation ID */}
-          <Suggestions />
         </div>
 
         <ChatInput />

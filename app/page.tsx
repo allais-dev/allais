@@ -474,20 +474,32 @@ export default function Home() {
                 <div className="text-4xl font-bold mb-6 animate-in-slide-up animate-delay-300" data-animate="slide-up">
                   $0
                 </div>
-                <p className="text-zinc-400 mb-6">Basic access with limited messages</p>
+                <p className="text-zinc-400 mb-6">Explore AI freely, with fair limits to get started</p>
 
                 <ul className="space-y-4 mb-8">
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-teal-500 mr-3 flex-shrink-0 mt-0.5" />
-                    <span>10 messages per day</span>
+                    <span>Access to ChatGPT & Gemini</span>
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-teal-500 mr-3 flex-shrink-0 mt-0.5" />
-                    <span>1 page note</span>
+                    <span>30 messages per conversation</span>
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-teal-500 mr-3 flex-shrink-0 mt-0.5" />
-                    <span>Basic AI model access</span>
+                    <span>Unlimited new conversations per day</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-teal-500 mr-3 flex-shrink-0 mt-0.5" />
+                    <span>Save up to 5 chat histories</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-teal-500 mr-3 flex-shrink-0 mt-0.5" />
+                    <span>Create up to 10 Notes/Pages</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-teal-500 mr-3 flex-shrink-0 mt-0.5" />
+                    <span>Full in-session AI context</span>
                   </li>
                 </ul>
 
@@ -517,20 +529,36 @@ export default function Home() {
                 <div className="text-4xl font-bold mb-6 animate-in-slide-up animate-delay-300" data-animate="slide-up">
                   $9.99<span className="text-xl font-normal">/mo</span>
                 </div>
-                <p className="text-zinc-400 mb-6">Enhanced access with more messages</p>
+                <p className="text-zinc-400 mb-6">For everyday users who want more space and continuity</p>
 
                 <ul className="space-y-4 mb-8">
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-teal-500 mr-3 flex-shrink-0 mt-0.5" />
-                    <span>100 messages per day</span>
+                    <span>Unlimited messages per conversation</span>
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-teal-500 mr-3 flex-shrink-0 mt-0.5" />
-                    <span>3 page notes</span>
+                    <span>Access to ChatGPT & Gemini</span>
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-teal-500 mr-3 flex-shrink-0 mt-0.5" />
-                    <span>Access to all AI models</span>
+                    <span>Save up to 100 chat histories</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-teal-500 mr-3 flex-shrink-0 mt-0.5" />
+                    <span>Create up to 100 Notes/Pages</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-teal-500 mr-3 flex-shrink-0 mt-0.5" />
+                    <span>Smart memory across sessions</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-teal-500 mr-3 flex-shrink-0 mt-0.5" />
+                    <span>Upload up to 20 files/images per day</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-teal-500 mr-3 flex-shrink-0 mt-0.5" />
+                    <span>AI tools (summarize, rephrase, continue)</span>
                   </li>
                 </ul>
 
@@ -557,20 +585,40 @@ export default function Home() {
                 <div className="text-4xl font-bold mb-6 animate-in-slide-up animate-delay-300" data-animate="slide-up">
                   $19.99<span className="text-xl font-normal">/mo</span>
                 </div>
-                <p className="text-zinc-400 mb-6">Unlimited access with premium features</p>
+                <p className="text-zinc-400 mb-6">For power users and content creators</p>
 
                 <ul className="space-y-4 mb-8">
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-teal-500 mr-3 flex-shrink-0 mt-0.5" />
-                    <span>Unlimited messages</span>
+                    <span>Everything in Standard</span>
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-teal-500 mr-3 flex-shrink-0 mt-0.5" />
-                    <span>Unlimited page notes</span>
+                    <span>Unlimited chat history</span>
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-teal-500 mr-3 flex-shrink-0 mt-0.5" />
-                    <span>Priority access to newest AI models</span>
+                    <span>Unlimited Notes/Pages</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-teal-500 mr-3 flex-shrink-0 mt-0.5" />
+                    <span>Long-term memory & context</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-teal-500 mr-3 flex-shrink-0 mt-0.5" />
+                    <span>Unlimited file/image uploads</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-teal-500 mr-3 flex-shrink-0 mt-0.5" />
+                    <span>Advanced tools (AI personas, model comparison)</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-teal-500 mr-3 flex-shrink-0 mt-0.5" />
+                    <span>Priority support</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-teal-500 mr-3 flex-shrink-0 mt-0.5" />
+                    <span>Early access to new features</span>
                   </li>
                 </ul>
 
@@ -1093,6 +1141,14 @@ export default function Home() {
                     <Link href="/" className="text-zinc-500 text-sm hover:text-white transition-colors">
                       Home
                     </Link>
+                  </li>
+                  <li>
+                    <button
+                      onClick={() => scrollToSection(featuresRef)}
+                      className="text-zinc-500 text-sm hover:text-white transition-colors"
+                    >
+                      Features
+                    </button>
                   </li>
                   <li>
                     <button

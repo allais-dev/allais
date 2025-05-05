@@ -14,6 +14,7 @@ export interface Message {
   model?: AIModel
   error?: boolean
   isStreaming?: boolean
+  files?: File[]
 }
 
 export interface Conversation {
@@ -29,10 +30,10 @@ export interface AIResponse {
   error?: string
 }
 
-// Webhook URLs for each model
+// Constants for webhook URLs
 const WEBHOOK_URLS = {
-  ChatGPT: "https://n8nttl.allais.space/webhook-test/203c81fe-6cfa-4514-a11f-e7bd87abac09",
-  Gemini: "https://n8nttl.allais.space/webhook-test/0faec6f6-d7eb-466d-b3e1-1c184c447e3a",
+  ChatGPT: "https://n8nttl.allais.space/webhook/203c81fe-6cfa-4514-a11f-e7bd87abac09",
+  Gemini: "https://n8nttl.allais.space/webhook/0faec6f6-d7eb-466d-b3e1-1c184c447e3a",
 }
 
 // Request timeout in milliseconds
@@ -43,6 +44,9 @@ const MAX_RETRIES = 3
 
 // Maximum number of messages to include in conversation history
 const MAX_HISTORY_MESSAGES = 10
+
+// Maximum file size in bytes (5MB)
+const MAX_FILE_SIZE = 5 * 1024 * 1024
 
 /**
  * API client for handling all external communications
@@ -55,6 +59,59 @@ export class ApiClient {
   private lastRequestTime = 0
   private pendingRequests = new Map<string, boolean>() // Track pending requests by message ID
   private lastRequestId: string | null = null
+
+  /**
+   * Convert a file to base64
+   */
+  private async fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = () => {
+        if (typeof reader.result === "string") {
+          // Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
+          const base64 = reader.result.split(",")[1]
+          resolve(base64)
+        } else {
+          reject(new Error("Failed to convert file to base64"))
+        }
+      }
+      reader.onerror = (error) => reject(error)
+    })
+  }
+
+  /**
+   * Process files for sending to the webhook
+   */
+  private async processFiles(
+    files?: File[],
+  ): Promise<Array<{ name: string; type: string; size: number; base64: string }> | undefined> {
+    if (!files || files.length === 0) return undefined
+
+    const processedFiles = []
+
+    for (const file of files) {
+      // Check file size
+      if (file.size > MAX_FILE_SIZE) {
+        console.warn(`File ${file.name} exceeds maximum size of ${MAX_FILE_SIZE / (1024 * 1024)}MB`)
+        continue
+      }
+
+      try {
+        const base64 = await this.fileToBase64(file)
+        processedFiles.push({
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          base64,
+        })
+      } catch (error) {
+        console.error(`Error processing file ${file.name}:`, error)
+      }
+    }
+
+    return processedFiles.length > 0 ? processedFiles : undefined
+  }
 
   /**
    * Send a message to the AI model and get a streaming response
@@ -70,6 +127,7 @@ export class ApiClient {
     conversationId: string | null = null,
     isNewConversation = false,
     conversationHistory: Message[] = [],
+    files?: File[],
   ): Promise<void> {
     // Generate a unique request ID
     const requestId = `req-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
@@ -123,6 +181,13 @@ export class ApiClient {
 
       console.log(`[${requestId}] Sending message with ${formattedHistory.length} history messages to ${model}`)
 
+      // Process files if any
+      const processedFiles = await this.processFiles(files)
+
+      if (files && files.length > 0) {
+        console.log(`[${requestId}] Sending ${files.length} files with the message`)
+      }
+
       // Start simulating typing immediately for better UX
       let typingSimulationDone = false
       const typingPromise = this.startTypingSimulation(message, onChunk, signal).then(() => {
@@ -167,6 +232,9 @@ export class ApiClient {
             user_id: userId,
             conversation_history: formattedHistory,
             request_id: requestId, // Add request ID to help with debugging
+            has_files: processedFiles && processedFiles.length > 0, // Add this to indicate files are attached
+            file_count: processedFiles?.length || 0, // Add file count
+            files: processedFiles, // Add the processed files
           }
 
           // Wait for typing simulation to complete before sending the actual request
@@ -283,6 +351,7 @@ export class ApiClient {
             conversationId,
             isNewConversation,
             conversationHistory,
+            files,
           )
 
           if (!response.error) {
@@ -427,6 +496,7 @@ export class ApiClient {
     conversationId: string | null = null,
     isNewConversation = false,
     conversationHistory: Message[] = [],
+    files?: File[],
   ): Promise<AIResponse> {
     // Generate a unique request ID
     const requestId = `req-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
@@ -463,6 +533,13 @@ export class ApiClient {
 
       console.log(`[${requestId}] Sending message with ${formattedHistory.length} history messages to ${model}`)
 
+      // Process files if any
+      const processedFiles = await this.processFiles(files)
+
+      if (files && files.length > 0) {
+        console.log(`[${requestId}] Sending ${files.length} files with the message`)
+      }
+
       // Try multiple times with exponential backoff
       let attempt = 0
       let lastError: Error | null = null
@@ -486,6 +563,9 @@ export class ApiClient {
             user_id: userId,
             conversation_history: formattedHistory,
             request_id: requestId, // Add request ID to help with debugging
+            has_files: processedFiles && processedFiles.length > 0, // Add this to indicate files are attached
+            file_count: processedFiles?.length || 0, // Add file count
+            files: processedFiles, // Add the processed files
           }
 
           // Send the request
@@ -723,28 +803,54 @@ export class ApiClient {
       const assistantTimestamp = new Date(userTimestamp.getTime() + 100) // 100ms later
 
       // Save user message
-      await this.supabase.from("chat_messages").insert([
-        {
-          conversation_id: conversationId,
-          content: userMessage.content,
-          role: userMessage.role,
-          ai_model: userMessage.model?.toLowerCase() || null,
-          created_at: userTimestamp.toISOString(),
-          tokens_used: 0,
-        },
-      ])
+      const { data: userData, error: userError } = await this.supabase
+        .from("chat_messages")
+        .insert([
+          {
+            conversation_id: conversationId,
+            content: userMessage.content,
+            role: userMessage.role,
+            ai_model: userMessage.model?.toLowerCase() || assistantMessage.model?.toLowerCase() || "chatgpt", // Default to ChatGPT if no model is specified
+            created_at: userTimestamp.toISOString(),
+            tokens_used: 0,
+          },
+        ])
+        .select()
+
+      if (userError) {
+        console.error("Error saving user message:", userError)
+      } else {
+        console.log("Successfully saved user message:", {
+          id: userData?.[0]?.id,
+          role: "user",
+          content: userMessage.content.substring(0, 20) + "...",
+        })
+      }
 
       // Save assistant message
-      await this.supabase.from("chat_messages").insert([
-        {
-          conversation_id: conversationId,
-          content: assistantMessage.content,
-          role: assistantMessage.role,
-          ai_model: assistantMessage.model?.toLowerCase() || null,
-          created_at: assistantTimestamp.toISOString(), // Use the offset timestamp
-          tokens_used: 0,
-        },
-      ])
+      const { data: assistantData, error: assistantError } = await this.supabase
+        .from("chat_messages")
+        .insert([
+          {
+            conversation_id: conversationId,
+            content: assistantMessage.content,
+            role: assistantMessage.role,
+            ai_model: assistantMessage.model?.toLowerCase() || null,
+            created_at: assistantTimestamp.toISOString(), // Use the offset timestamp
+            tokens_used: 0,
+          },
+        ])
+        .select()
+
+      if (assistantError) {
+        console.error("Error saving assistant message:", assistantError)
+      } else {
+        console.log("Successfully saved assistant message:", {
+          id: assistantData?.[0]?.id,
+          role: "assistant",
+          content: assistantMessage.content.substring(0, 20) + "...",
+        })
+      }
 
       console.log(
         `Saved messages with timestamps: User=${userTimestamp.toISOString()}, Assistant=${assistantTimestamp.toISOString()}`,
@@ -812,6 +918,16 @@ export class ApiClient {
             messages: [],
           }
         }
+
+        // Debug log all messages from database
+        console.log(
+          "Raw messages from database:",
+          messages.map((m) => ({
+            id: m.id.substring(0, 8),
+            role: m.role,
+            content: m.content.substring(0, 20) + "...",
+          })),
+        )
 
         // Format messages with precise timestamps
         const formattedMessages: Message[] = messages.map((msg) => ({

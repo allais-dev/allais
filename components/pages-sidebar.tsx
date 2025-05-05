@@ -164,13 +164,13 @@ export function PagesSidebar({ isCollapsed = false }) {
             <Button
               variant="outline"
               onClick={() => setIsCreateDialogOpen(false)}
-              className="border-[#333] bg-transparent hover:bg-[#0f0f10]"
+              className="border-[#333] bg-transparent hover:bg-[#0f0f10] text-xs"
             >
               Cancel
             </Button>
             <Button
               onClick={handleCreatePage}
-              className="bg-indigo-600 hover:bg-indigo-700"
+              className="border border-[#333] bg-[#1a1a1a] hover:bg-[#0f0f10] text-xs"
               disabled={!newPageTitle.trim()}
             >
               Create

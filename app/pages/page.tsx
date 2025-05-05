@@ -55,7 +55,7 @@ export default function PagesPage() {
               <Button
                 size="sm"
                 onClick={handleCreatePage}
-                className="bg-[#141415] text-white border-[#ffffff1f] hover:bg-[#1a1a1a] hover:text-white"
+                className="bg-[#141415] text-white border border-[#ffffff1f] hover:bg-[#1a1a1a] hover:text-white text-xs"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 New Page
@@ -91,7 +91,7 @@ export default function PagesPage() {
                 <Button
                   size="sm"
                   onClick={handleCreatePage}
-                  className="bg-[#141415] text-white border-[#ffffff1f] hover:bg-[#1a1a1a] hover:text-white"
+                  className="bg-[#141415] text-white border border-[#ffffff1f] hover:bg-[#1a1a1a] hover:text-white text-xs"
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Create Page

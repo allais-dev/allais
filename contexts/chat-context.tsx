@@ -1,707 +1,428 @@
 "use client"
 
 import type React from "react"
-
-import { createContext, useContext, useReducer, useEffect, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react"
+import { v4 as uuidv4 } from "uuid"
 import { useToast } from "@/components/ui/use-toast"
 import { useAuth } from "@/components/auth-provider"
-import { useSubscription } from "@/components/subscription-provider"
-import { apiClient, type Message, type Conversation, type AIModel } from "@/utils/api-client"
+import { apiClient, type Message, type AIModel } from "@/utils/api-client"
 
-// Free plan message limit (now unlimited)
-const FREE_PLAN_MESSAGE_LIMIT = Number.POSITIVE_INFINITY
-
-// Chat state
-interface ChatState {
-  conversation: Conversation
+// Define the shape of our chat context
+interface ChatContextType {
+  messages: Message[]
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>
   isLoading: boolean
-  isStreaming: boolean
-  streamingMessageId: string | null
-  error: string | null
   selectedModel: AIModel
+  setSelectedModel: React.Dispatch<React.SetStateAction<AIModel>>
+  sendMessage: (content: string, files?: File[]) => Promise<void>
+  resetChat: () => void
+  currentConversationId: string | null
+  setCurrentConversationId: React.Dispatch<React.SetStateAction<string | null>>
+  loadConversation: (conversationId: string) => Promise<boolean>
+  deleteConversation: (conversationId: string) => Promise<boolean>
   dailyMessageCount: number
-  hasReachedLimit: boolean
-  networkStatus: "online" | "offline"
-  failedMessages: string[] // Track failed message IDs
+  maxDailyMessages: number
+  hasReachedDailyLimit: boolean
+  retryFailedMessage: (messageId: string) => void
 }
 
-// Chat actions
-type ChatAction =
-  | { type: "SET_CONVERSATION"; payload: Conversation }
-  | { type: "ADD_MESSAGE"; payload: Message }
-  | { type: "UPDATE_STREAMING_MESSAGE"; payload: { id: string; content: string } }
-  | { type: "SET_LOADING"; payload: boolean }
-  | { type: "SET_STREAMING"; payload: boolean }
-  | { type: "SET_STREAMING_MESSAGE_ID"; payload: string | null }
-  | { type: "SET_ERROR"; payload: string | null }
-  | { type: "SET_MODEL"; payload: AIModel }
-  | { type: "SET_DAILY_MESSAGE_COUNT"; payload: number }
-  | { type: "SET_HAS_REACHED_LIMIT"; payload: boolean }
-  | { type: "SET_NETWORK_STATUS"; payload: "online" | "offline" }
-  | { type: "RESET_CONVERSATION" }
-  | { type: "UPDATE_CONVERSATION_ID"; payload: string }
-  | { type: "ADD_FAILED_MESSAGE"; payload: string }
-  | { type: "REMOVE_FAILED_MESSAGE"; payload: string }
-  | { type: "CLEAR_FAILED_MESSAGES" }
-
-// Initial state
-const initialState: ChatState = {
-  conversation: {
-    id: null,
-    title: "New Conversation",
-    messages: [],
-  },
-  isLoading: false,
-  isStreaming: false,
-  streamingMessageId: null,
-  error: null,
-  selectedModel: "Gemini",
-  dailyMessageCount: 0,
-  hasReachedLimit: false,
-  networkStatus: "online",
-  failedMessages: [],
-}
-
-// Reducer function
-function chatReducer(state: ChatState, action: ChatAction): ChatState {
-  switch (action.type) {
-    case "SET_CONVERSATION":
-      return {
-        ...state,
-        conversation: action.payload,
-      }
-    case "ADD_MESSAGE":
-      return {
-        ...state,
-        conversation: {
-          ...state.conversation,
-          messages: [...state.conversation.messages, action.payload],
-        },
-      }
-    case "UPDATE_STREAMING_MESSAGE": {
-      const { id, content } = action.payload
-      return {
-        ...state,
-        conversation: {
-          ...state.conversation,
-          messages: state.conversation.messages.map((message) =>
-            message.id === id ? { ...message, content } : message,
-          ),
-        },
-      }
-    }
-    case "SET_LOADING":
-      return {
-        ...state,
-        isLoading: action.payload,
-      }
-    case "SET_STREAMING":
-      return {
-        ...state,
-        isStreaming: action.payload,
-      }
-    case "SET_STREAMING_MESSAGE_ID":
-      return {
-        ...state,
-        streamingMessageId: action.payload,
-      }
-    case "SET_ERROR":
-      return {
-        ...state,
-        error: action.payload,
-      }
-    case "SET_MODEL":
-      return {
-        ...state,
-        selectedModel: action.payload,
-      }
-    case "SET_DAILY_MESSAGE_COUNT":
-      return {
-        ...state,
-        dailyMessageCount: action.payload,
-      }
-    case "SET_HAS_REACHED_LIMIT":
-      return {
-        ...state,
-        hasReachedLimit: action.payload,
-      }
-    case "SET_NETWORK_STATUS":
-      return {
-        ...state,
-        networkStatus: action.payload,
-      }
-    case "RESET_CONVERSATION":
-      return {
-        ...state,
-        conversation: {
-          id: null,
-          title: "New Conversation",
-          messages: [],
-        },
-      }
-    case "UPDATE_CONVERSATION_ID":
-      return {
-        ...state,
-        conversation: {
-          ...state.conversation,
-          id: action.payload,
-        },
-      }
-    case "ADD_FAILED_MESSAGE":
-      return {
-        ...state,
-        failedMessages: [...state.failedMessages, action.payload],
-      }
-    case "REMOVE_FAILED_MESSAGE":
-      return {
-        ...state,
-        failedMessages: state.failedMessages.filter((id) => id !== action.payload),
-      }
-    case "CLEAR_FAILED_MESSAGES":
-      return {
-        ...state,
-        failedMessages: [],
-      }
-    default:
-      return state
-  }
-}
-
-// Context
-interface ChatContextType extends ChatState {
-  sendMessage: (content: string) => Promise<void>
-  changeModel: (model: AIModel) => void
-  resetConversation: () => void
-  cancelRequest: () => void
-  loadConversation: (id: string) => Promise<void>
-  isFreePlan: () => boolean
-  retryFailedMessage: (messageId: string) => Promise<void>
-}
-
+// Create the context with a default value
 const ChatContext = createContext<ChatContextType | undefined>(undefined)
 
-// Provider component
-export function ChatProvider({
-  children,
-  initialConversation,
-}: {
-  children: React.ReactNode
-  initialConversation?: Conversation
-}) {
-  const [state, dispatch] = useReducer(chatReducer, {
-    ...initialState,
-    conversation: initialConversation || initialState.conversation,
-  })
-
-  const { user } = useAuth()
-  const { toast } = useToast()
-  const router = useRouter()
-  const { currentPlan } = useSubscription()
-  const isFirstMessageRef = useRef(true)
-  const planCheckedRef = useRef(false)
-  const pendingConversationIdRef = useRef<string | null>(null)
-  const messageRetryQueue = useRef<Map<string, Message>>(new Map())
-
-  // Initialize conversation
-  useEffect(() => {
-    if (initialConversation) {
-      console.log("Setting initial conversation:", initialConversation)
-      dispatch({ type: "SET_CONVERSATION", payload: initialConversation })
-      isFirstMessageRef.current = initialConversation.id === null
-    }
-  }, [initialConversation])
-
-  // Check network status
-  useEffect(() => {
-    const handleOnline = () => {
-      dispatch({ type: "SET_NETWORK_STATUS", payload: "online" })
-      toast({
-        title: "You're back online",
-        description: "Your connection has been restored",
-      })
-    }
-
-    const handleOffline = () => {
-      dispatch({ type: "SET_NETWORK_STATUS", payload: "offline" })
-      toast({
-        title: "You're offline",
-        description: "Check your connection and try again",
-        variant: "destructive",
-      })
-    }
-
-    window.addEventListener("online", handleOnline)
-    window.addEventListener("offline", handleOffline)
-
-    return () => {
-      window.removeEventListener("online", handleOnline)
-      window.removeEventListener("offline", handleOffline)
-    }
-  }, [toast])
-
-  // Load user's subscription plan
-  useEffect(() => {
-    const loadUserPlan = async () => {
-      if (!user) return
-
-      try {
-        // Check message limit
-        await checkMessageLimit()
-        planCheckedRef.current = true
-      } catch (error) {
-        console.error("Error loading user plan:", error)
-      }
-    }
-
-    loadUserPlan()
-  }, [user, currentPlan])
-
-  // Check if user is on free plan
-  const isFreePlan = () => {
-    return false // Everyone has premium features
-  }
-
-  // Check if user has reached daily message limit
-  const checkMessageLimit = async () => {
-    if (!user) return false
-
-    // Only apply limit to free plan users
-    if (!isFreePlan()) {
-      dispatch({ type: "SET_HAS_REACHED_LIMIT", payload: false })
-      return false
-    }
-
-    const count = await apiClient.fetchDailyMessageCount(user.id)
-    dispatch({ type: "SET_DAILY_MESSAGE_COUNT", payload: count })
-
-    const hasReached = count >= FREE_PLAN_MESSAGE_LIMIT
-    dispatch({ type: "SET_HAS_REACHED_LIMIT", payload: hasReached })
-
-    return hasReached
-  }
-
-  // Load a conversation
-  const loadConversation = async (id: string) => {
-    if (!user) return
-
-    dispatch({ type: "SET_LOADING", payload: true })
-    dispatch({ type: "SET_ERROR", payload: null })
-
-    try {
-      console.log("ChatContext: Loading conversation:", id)
-      const conversation = await apiClient.fetchConversation(id, user.id)
-
-      if (conversation) {
-        console.log("ChatContext: Conversation loaded successfully:", conversation.title)
-
-        // Ensure messages are sorted by timestamp
-        if (conversation.messages && conversation.messages.length > 0) {
-          conversation.messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
-        }
-
-        dispatch({ type: "SET_CONVERSATION", payload: conversation })
-
-        // If the conversation has messages, check the model of the last message
-        // and set it as the current model
-        if (conversation.messages && conversation.messages.length > 0) {
-          const lastMessage = conversation.messages[conversation.messages.length - 1]
-          if (lastMessage.model) {
-            dispatch({ type: "SET_MODEL", payload: lastMessage.model })
-          }
-        }
-      } else {
-        console.log("ChatContext: Conversation not found")
-        dispatch({ type: "RESET_CONVERSATION" })
-        toast({
-          title: "Conversation not found",
-          description: "The conversation you're looking for doesn't exist or you don't have access to it.",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
-      console.error("Error loading conversation in ChatContext:", error)
-      dispatch({ type: "SET_ERROR", payload: "Failed to load conversation. Please try again." })
-      toast({
-        title: "Error",
-        description: "Failed to load conversation. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      dispatch({ type: "SET_LOADING", payload: false })
-    }
-  }
-
-  // Retry a failed message
-  const retryFailedMessage = async (messageId: string) => {
-    if (!user || !state.conversation.id) return
-
-    // Find the failed message in the conversation
-    const failedMessage = state.conversation.messages.find((msg) => msg.id === messageId)
-    if (!failedMessage || failedMessage.role !== "user") return
-
-    // Remove from failed messages list
-    dispatch({ type: "REMOVE_FAILED_MESSAGE", payload: messageId })
-
-    // Resend the message
-    await sendMessage(failedMessage.content)
-  }
-
-  // Send a message with streaming response
-  const sendMessage = async (content: string) => {
-    if (!content.trim() || !user) return
-
-    // Check network status
-    if (state.networkStatus === "offline") {
-      dispatch({
-        type: "ADD_MESSAGE",
-        payload: {
-          id: Date.now().toString(),
-          content: "You're currently offline. Please check your connection and try again.",
-          role: "system",
-          timestamp: new Date(),
-          error: true,
-        },
-      })
-      return
-    }
-
-    // Check message limit for free plan
-    if (isFreePlan()) {
-      const limitReached = await checkMessageLimit()
-
-      if (limitReached) {
-        dispatch({
-          type: "ADD_MESSAGE",
-          payload: {
-            id: Date.now().toString(),
-            content: `You've reached your daily limit of ${FREE_PLAN_MESSAGE_LIMIT} messages. Please upgrade your plan for unlimited messaging.`,
-            role: "system",
-            timestamp: new Date(),
-            error: true,
-          },
-        })
-
-        toast({
-          title: "Message Limit Reached",
-          description: `You've used all ${FREE_PLAN_MESSAGE_LIMIT} messages for today. Upgrade to continue chatting.`,
-          variant: "destructive",
-        })
-
-        return
-      }
-    }
-
-    // Reset error
-    dispatch({ type: "SET_ERROR", payload: null })
-
-    // Create user message with precise timestamp
-    const now = new Date()
-    const userMessageId = Date.now().toString()
-    const userMessage: Message = {
-      id: userMessageId,
-      content,
-      role: "user",
-      timestamp: now,
-      model: state.selectedModel,
-    }
-
-    // Add user message to state
-    dispatch({ type: "ADD_MESSAGE", payload: userMessage })
-
-    // Create a placeholder for the assistant's response with a slightly later timestamp
-    const assistantMessageId = (Date.now() + 1).toString()
-    const assistantMessage: Message = {
-      id: assistantMessageId,
-      content: "",
-      role: "assistant",
-      timestamp: new Date(now.getTime() + 100), // 100ms later
-      model: state.selectedModel,
-      isStreaming: true,
-    }
-
-    // Add the placeholder message
-    dispatch({ type: "ADD_MESSAGE", payload: assistantMessage })
-
-    // Set streaming state
-    dispatch({ type: "SET_STREAMING", payload: true })
-    dispatch({ type: "SET_STREAMING_MESSAGE_ID", payload: assistantMessageId })
-
-    try {
-      // Ensure user profile exists
-      if (user) {
-        await apiClient.ensureUserProfile(user.id, user.email)
-      }
-
-      // Check if we need to create a new conversation
-      let conversationId = state.conversation.id
-      let isNewConversation = false
-
-      if (!conversationId && isFirstMessageRef.current) {
-        // Create a new conversation
-        const title = content.substring(0, 30) + (content.length > 30 ? "..." : "")
-
-        // Start creating the conversation in the background
-        const createConversationPromise = apiClient.createConversation(user.id, title)
-
-        // Update the UI immediately with a temporary ID
-        const tempId = `temp-${Date.now()}`
-        dispatch({
-          type: "UPDATE_CONVERSATION_ID",
-          payload: tempId,
-        })
-
-        // Wait for the actual conversation ID
-        conversationId = await createConversationPromise
-        isFirstMessageRef.current = false
-        isNewConversation = true
-
-        if (conversationId) {
-          // Store the pending ID to avoid race conditions
-          pendingConversationIdRef.current = conversationId
-
-          // Update conversation state with the real ID
-          dispatch({
-            type: "UPDATE_CONVERSATION_ID",
-            payload: conversationId,
-          })
-
-          // Update URL without page reload
-          router.push(`/dashboard?conversation=${conversationId}`, { scroll: false })
-        }
-      }
-
-      // Get the current conversation history
-      // Include the new user message we just added
-      const conversationHistory = [...state.conversation.messages.filter((m) => !m.isStreaming), userMessage]
-
-      // Initialize full response text
-      let fullResponseText = ""
-
-      // Stream the message
-      await apiClient.streamMessage(
-        content,
-        state.selectedModel,
-        user.id,
-        // On chunk received
-        (chunk) => {
-          fullResponseText += chunk
-          dispatch({
-            type: "UPDATE_STREAMING_MESSAGE",
-            payload: { id: assistantMessageId, content: fullResponseText },
-          })
-        },
-        // On complete
-        (finalText) => {
-          // Update the message with the final text
-          dispatch({
-            type: "UPDATE_STREAMING_MESSAGE",
-            payload: { id: assistantMessageId, content: finalText },
-          })
-
-          // Reset streaming state
-          dispatch({ type: "SET_STREAMING", payload: false })
-          dispatch({ type: "SET_STREAMING_MESSAGE_ID", payload: null })
-
-          // Save messages to database
-          if (conversationId) {
-            const finalAssistantMessage = {
-              ...assistantMessage,
-              content: finalText,
-              isStreaming: false,
-            }
-            apiClient.saveMessages(conversationId, userMessage, finalAssistantMessage)
-          }
-
-          // Update message count
-          if (isFreePlan()) {
-            checkMessageLimit()
-          }
-        },
-        // On error
-        (errorMessage) => {
-          console.error("Error in streaming response:", errorMessage)
-
-          // Add the message ID to failed messages
-          dispatch({ type: "ADD_FAILED_MESSAGE", payload: userMessageId })
-
-          // Try one more time with a simpler approach for common questions
-          if (content.toLowerCase().includes("what is") && content.includes("*")) {
-            try {
-              // Extract numbers and operation
-              const mathExpression = content.replace(/what is/i, "").trim()
-              // Use Function constructor to safely evaluate the math expression
-              const result = new Function(`return ${mathExpression}`)()
-              const answer = `The answer to ${mathExpression} is ${result}.`
-
-              // Update the message with the calculated answer
-              dispatch({
-                type: "UPDATE_STREAMING_MESSAGE",
-                payload: {
-                  id: assistantMessageId,
-                  content: answer,
-                },
-              })
-
-              // Reset streaming state
-              dispatch({ type: "SET_STREAMING", payload: false })
-              dispatch({ type: "SET_STREAMING_MESSAGE_ID", payload: null })
-
-              // Remove from failed messages
-              dispatch({ type: "REMOVE_FAILED_MESSAGE", payload: userMessageId })
-
-              return
-            } catch (calcError) {
-              console.error("Failed to calculate math expression:", calcError)
-            }
-          }
-
-          // Update the message with the error
-          dispatch({
-            type: "UPDATE_STREAMING_MESSAGE",
-            payload: {
-              id: assistantMessageId,
-              content: `Sorry, there was an error: ${errorMessage}. Please try again.`,
-            },
-          })
-
-          // Reset streaming state
-          dispatch({ type: "SET_STREAMING", payload: false })
-          dispatch({ type: "SET_STREAMING_MESSAGE_ID", payload: null })
-          dispatch({ type: "SET_ERROR", payload: errorMessage })
-
-          // Show toast notification about the error
-          toast({
-            title: "Error",
-            description: `Failed to get response: ${errorMessage}`,
-            variant: "destructive",
-          })
-        },
-        conversationId,
-        isNewConversation,
-        conversationHistory,
-      )
-    } catch (error: any) {
-      console.error("Error sending message:", error)
-
-      // Add the message ID to failed messages
-      dispatch({ type: "ADD_FAILED_MESSAGE", payload: userMessageId })
-
-      // Update the streaming message with an error
-      dispatch({
-        type: "UPDATE_STREAMING_MESSAGE",
-        payload: {
-          id: state.streamingMessageId || assistantMessageId,
-          content: `Sorry, there was an error sending your message: ${error.message}. Please try again.`,
-        },
-      })
-
-      // Reset streaming state
-      dispatch({ type: "SET_STREAMING", payload: false })
-      dispatch({ type: "SET_STREAMING_MESSAGE_ID", payload: null })
-      dispatch({ type: "SET_ERROR", payload: "Failed to send message" })
-
-      // Show toast notification about the error
-      toast({
-        title: "Error",
-        description: "Failed to send message. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  // Change the AI model
-  const changeModel = (model: AIModel) => {
-    if (model === state.selectedModel) return
-
-    dispatch({ type: "SET_MODEL", payload: model })
-
-    // Add system message about model change
-    if (state.conversation.messages.length > 0) {
-      dispatch({
-        type: "ADD_MESSAGE",
-        payload: {
-          id: Date.now().toString(),
-          content: `Switched to ${model} model`,
-          role: "system",
-          timestamp: new Date(),
-          model,
-        },
-      })
-
-      // Show toast notification about model change
-      toast({
-        title: `Switched to ${model}`,
-        description: "Your next message will be sent to the new model with full conversation history.",
-      })
-    }
-  }
-
-  // Reset conversation
-  const resetConversation = () => {
-    dispatch({ type: "RESET_CONVERSATION" })
-    dispatch({ type: "CLEAR_FAILED_MESSAGES" })
-    isFirstMessageRef.current = true
-    router.push("/dashboard", { scroll: false })
-  }
-
-  // Cancel request
-  const cancelRequest = () => {
-    apiClient.cancelRequest()
-
-    if (state.streamingMessageId) {
-      // Update the streaming message to indicate cancellation
-      dispatch({
-        type: "UPDATE_STREAMING_MESSAGE",
-        payload: {
-          id: state.streamingMessageId,
-          content: "Message request cancelled",
-        },
-      })
-    }
-
-    // Reset streaming state
-    dispatch({ type: "SET_STREAMING", payload: false })
-    dispatch({ type: "SET_STREAMING_MESSAGE_ID", payload: null })
-
-    // Add system message about cancellation if no streaming message
-    if (!state.streamingMessageId) {
-      dispatch({
-        type: "ADD_MESSAGE",
-        payload: {
-          id: Date.now().toString(),
-          content: "Message request cancelled",
-          role: "system",
-          timestamp: new Date(),
-          error: true,
-        },
-      })
-    }
-  }
-
-  return (
-    <ChatContext.Provider
-      value={{
-        ...state,
-        sendMessage,
-        changeModel,
-        resetConversation,
-        cancelRequest,
-        loadConversation,
-        isFreePlan,
-        retryFailedMessage,
-      }}
-    >
-      {children}
-    </ChatContext.Provider>
-  )
-}
-
-// Hook for using the chat context
+// Custom hook to use the chat context
 export function useChat() {
   const context = useContext(ChatContext)
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useChat must be used within a ChatProvider")
   }
   return context
+}
+
+// Provider component that wraps the app and provides the chat context
+export function ChatProvider({ children }: { children: React.ReactNode }) {
+  // State for messages, loading status, and selected model
+  const [messages, setMessages] = useState<Message[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [selectedModel, setSelectedModel] = useState<AIModel>("ChatGPT") // Changed default from Gemini to ChatGPT
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null)
+  const [dailyMessageCount, setDailyMessageCount] = useState(0)
+  const maxDailyMessages = 50 // Maximum number of messages per day
+  const [hasReachedDailyLimit, setHasReachedDailyLimit] = useState(false)
+
+  // Get the current user from auth context
+  const { user } = useAuth()
+  const { toast } = useToast()
+
+  // Refs for tracking streaming state
+  const streamingMessageRef = useRef<string | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
+
+  // Load daily message count on mount and when user changes
+  useEffect(() => {
+    if (user) {
+      loadDailyMessageCount()
+    }
+  }, [user])
+
+  useEffect(() => {
+    setHasReachedDailyLimit(dailyMessageCount >= maxDailyMessages)
+  }, [dailyMessageCount, maxDailyMessages])
+
+  // Load the daily message count from the API
+  const loadDailyMessageCount = useCallback(async () => {
+    if (!user) return
+
+    try {
+      const count = await apiClient.fetchDailyMessageCount(user.id)
+      setDailyMessageCount(count)
+    } catch (error) {
+      console.error("Error loading daily message count:", error)
+    }
+  }, [user])
+
+  // Function to retry a failed message
+  const retryFailedMessage = useCallback(
+    (messageId: string) => {
+      // Find the failed message
+      const failedMessage = messages.find((msg) => msg.id === messageId)
+      if (!failedMessage) return
+
+      // Find the user message that preceded it
+      const userMessageIndex = messages.findIndex((msg) => msg.id === messageId) - 1
+      if (userMessageIndex < 0) return
+
+      const userMessage = messages[userMessageIndex]
+      if (userMessage.role !== "user") return
+
+      // Remove the failed message and all messages after it
+      setMessages((prev) => prev.filter((_, index) => index <= userMessageIndex))
+
+      // Resend the user message
+      sendMessage(userMessage.content, userMessage.files)
+    },
+    [messages],
+  )
+
+  // Function to send a message
+  const sendMessage = useCallback(
+    async (content: string, files?: File[]) => {
+      if (!content.trim() && (!files || files.length === 0)) return
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to send messages",
+          variant: "destructive",
+        })
+        return
+      }
+
+      if (hasReachedDailyLimit) {
+        toast({
+          title: "Daily Limit Reached",
+          description: `You've reached your limit of ${maxDailyMessages} messages per day.`,
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Create a new user message
+      const userMessage: Message = {
+        id: uuidv4(),
+        content,
+        role: "user",
+        timestamp: new Date(),
+        files,
+      }
+
+      // Create a placeholder for the assistant's response
+      const assistantMessage: Message = {
+        id: uuidv4(),
+        content: "",
+        role: "assistant",
+        timestamp: new Date(),
+        model: selectedModel,
+        isStreaming: true,
+      }
+
+      // Add the messages to the state
+      setMessages((prev) => [...prev, userMessage, assistantMessage])
+
+      // Set loading state
+      setIsLoading(true)
+
+      // Store the ID of the streaming message
+      streamingMessageRef.current = assistantMessage.id
+
+      try {
+        // Check if this is a new conversation
+        const isNewConversation = !currentConversationId
+        let conversationId = currentConversationId
+
+        // If this is a new conversation, create one
+        if (isNewConversation && user) {
+          // Use the first few words of the message as the title
+          const title = content.split(" ").slice(0, 5).join(" ") + "..."
+          conversationId = await apiClient.createConversation(user.id, title)
+          if (conversationId) {
+            setCurrentConversationId(conversationId)
+          }
+        }
+
+        // Function to handle streaming chunks
+        const handleChunk = (chunk: string) => {
+          setMessages((prev) =>
+            prev.map((msg) => {
+              if (msg.id === assistantMessage.id) {
+                return {
+                  ...msg,
+                  content: msg.content + chunk,
+                }
+              }
+              return msg
+            }),
+          )
+        }
+
+        // Function to handle completion
+        const handleComplete = (fullText: string) => {
+          setMessages((prev) =>
+            prev.map((msg) => {
+              if (msg.id === assistantMessage.id) {
+                return {
+                  ...msg,
+                  content: fullText,
+                  isStreaming: false,
+                }
+              }
+              return msg
+            }),
+          )
+
+          // Clear the streaming message ref
+          streamingMessageRef.current = null
+
+          // Save the messages to the database if we have a conversation ID
+          if (conversationId) {
+            apiClient.saveMessages(conversationId, userMessage, {
+              ...assistantMessage,
+              content: fullText,
+              isStreaming: false,
+            })
+          }
+
+          // Update the daily message count
+          setDailyMessageCount((prev) => prev + 1)
+
+          // Set loading state
+          setIsLoading(false)
+        }
+
+        // Function to handle errors
+        const handleError = (error: string) => {
+          setMessages((prev) =>
+            prev.map((msg) => {
+              if (msg.id === assistantMessage.id) {
+                return {
+                  ...msg,
+                  content: `Error: ${error}`,
+                  error: true,
+                  isStreaming: false,
+                }
+              }
+              return msg
+            }),
+          )
+
+          // Clear the streaming message ref
+          streamingMessageRef.current = null
+
+          // Set loading state
+          setIsLoading(false)
+
+          // Show an error toast
+          toast({
+            title: "Error",
+            description: `Failed to get a response: ${error}`,
+            variant: "destructive",
+          })
+        }
+
+        // Send the message to the API
+        await apiClient.streamMessage(
+          content,
+          selectedModel,
+          user.id,
+          handleChunk,
+          handleComplete,
+          handleError,
+          conversationId,
+          isNewConversation,
+          messages,
+          files,
+        )
+      } catch (error: any) {
+        console.error("Error sending message:", error)
+
+        // Update the assistant message with the error
+        setMessages((prev) =>
+          prev.map((msg) => {
+            if (msg.id === assistantMessage.id) {
+              return {
+                ...msg,
+                content: `Error: ${error.message || "Unknown error"}`,
+                error: true,
+                isStreaming: false,
+              }
+            }
+            return msg
+          }),
+        )
+
+        // Clear the streaming message ref
+        streamingMessageRef.current = null
+
+        // Set loading state
+        setIsLoading(false)
+
+        // Show an error toast
+        toast({
+          title: "Error",
+          description: `Failed to send message: ${error.message || "Unknown error"}`,
+          variant: "destructive",
+        })
+      }
+    },
+    [user, selectedModel, currentConversationId, messages, toast, hasReachedDailyLimit, maxDailyMessages],
+  )
+
+  // Function to reset the chat
+  const resetChat = useCallback(() => {
+    // Cancel any ongoing requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
+
+    // Reset the messages
+    setMessages([])
+
+    // Reset the conversation ID
+    setCurrentConversationId(null)
+
+    // Reset the streaming message ref
+    streamingMessageRef.current = null
+
+    // Reset loading state
+    setIsLoading(false)
+  }, [])
+
+  // Function to load a conversation
+  const loadConversation = useCallback(
+    async (conversationId: string): Promise<boolean> => {
+      if (!user) return false
+
+      try {
+        // Reset the current chat
+        resetChat()
+
+        // Set loading state
+        setIsLoading(true)
+
+        // Load the conversation
+        const conversation = await apiClient.fetchConversation(conversationId, user.id)
+
+        // If the conversation was loaded successfully
+        if (conversation) {
+          console.log(
+            "Setting messages from conversation:",
+            conversation.messages.map((m) => ({ id: m.id.substring(0, 8), role: m.role })),
+          )
+
+          // Make sure we have messages
+          if (conversation.messages.length > 0) {
+            setMessages(conversation.messages)
+          } else {
+            console.warn("Conversation loaded but has no messages")
+          }
+
+          // Set the conversation ID
+          setCurrentConversationId(conversation.id)
+
+          // Set loading state
+          setIsLoading(false)
+
+          return true
+        }
+
+        // Set loading state
+        setIsLoading(false)
+
+        return false
+      } catch (error) {
+        console.error("Error loading conversation:", error)
+
+        // Set loading state
+        setIsLoading(false)
+
+        return false
+      }
+    },
+    [user, resetChat],
+  )
+
+  // Function to delete a conversation
+  const deleteConversation = useCallback(
+    async (conversationId: string): Promise<boolean> => {
+      if (!user) return false
+
+      try {
+        // Delete the conversation
+        const success = await apiClient.deleteConversation(conversationId, user.id)
+
+        // If the conversation was deleted successfully and it was the current conversation
+        if (success && conversationId === currentConversationId) {
+          // Reset the chat
+          resetChat()
+        }
+
+        return success
+      } catch (error) {
+        console.error("Error deleting conversation:", error)
+        return false
+      }
+    },
+    [user, currentConversationId, resetChat],
+  )
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      // Cancel any ongoing requests
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+        abortControllerRef.current = null
+      }
+    }
+  }, [])
+
+  // Create the context value
+  const contextValue: ChatContextType = {
+    messages,
+    setMessages,
+    isLoading,
+    selectedModel,
+    setSelectedModel,
+    sendMessage,
+    resetChat,
+    currentConversationId,
+    setCurrentConversationId,
+    loadConversation,
+    deleteConversation,
+    dailyMessageCount,
+    maxDailyMessages,
+    hasReachedDailyLimit,
+    retryFailedMessage,
+  }
+
+  return <ChatContext.Provider value={contextValue}>{children}</ChatContext.Provider>
 }
