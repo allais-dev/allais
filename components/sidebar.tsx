@@ -333,8 +333,11 @@ export function Sidebar({ isOpen = true, onConversationSelect, currentConversati
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <img src="/mystical-forest-spirit.png" alt="Profile" className="h-full w-full object-cover" />
-                    )}
+                      <img
+                      src={profileImage || "/placeholder.svg"}
+                      alt="Profile"
+                      className="h-full w-full object-cover"
+                    />                    )}
                   </div>
                   <div className="flex flex-col items-start">
                     <span className="text-sm text-white">{username}</span>
@@ -358,7 +361,11 @@ export function Sidebar({ isOpen = true, onConversationSelect, currentConversati
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <img src="/mystical-forest-spirit.png" alt="Profile" className="h-full w-full object-cover" />
+                      <img
+                      src={profileImage || "/placeholder.svg"}
+                      alt="Profile"
+                      className="h-full w-full object-cover"
+                    />
                     )}
                   </div>
                   <div className="flex flex-col items-start">
@@ -407,7 +414,11 @@ export function Sidebar({ isOpen = true, onConversationSelect, currentConversati
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <img src="/mystical-forest-spirit.png" alt="Profile" className="h-full w-full object-cover" />
+                    <img
+                    src={profileImage || "/placeholder.svg"}
+                    alt="Profile"
+                    className="h-full w-full object-cover"
+                  />
                   )}
                 </div>
               </div>
@@ -424,7 +435,11 @@ export function Sidebar({ isOpen = true, onConversationSelect, currentConversati
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <img src="/mystical-forest-spirit.png" alt="Profile" className="h-full w-full object-cover" />
+                      <img
+                        src={profileImage || "/placeholder.svg"}
+                        alt="Profile"
+                        className="h-full w-full object-cover"
+                      />
                     )}
                   </div>
                   <div className="flex flex-col items-start">
