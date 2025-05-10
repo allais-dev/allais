@@ -15,6 +15,7 @@ export interface Message {
   error?: boolean
   isStreaming?: boolean
   files?: File[]
+  userId?: string // Add userId to the Message interface
 }
 
 export interface Conversation {
@@ -47,6 +48,9 @@ const MAX_HISTORY_MESSAGES = 10
 
 // Maximum file size in bytes (5MB)
 const MAX_FILE_SIZE = 5 * 1024 * 1024
+
+// Special user ID for anonymous users
+const ANONYMOUS_USER_ID = "efcfb65f-cc62-431b-a1ee-2cca90618d39"
 
 /**
  * API client for handling all external communications
@@ -229,7 +233,7 @@ export class ApiClient {
             timestamp: new Date().toISOString(),
             conversation_id: conversationId,
             is_new_conversation: isNewConversation,
-            user_id: userId,
+            user_id: userId, // This will now accept "anonymous" for non-logged in users
             conversation_history: formattedHistory,
             request_id: requestId, // Add request ID to help with debugging
             has_files: processedFiles && processedFiles.length > 0, // Add this to indicate files are attached
@@ -560,7 +564,7 @@ export class ApiClient {
             timestamp: new Date().toISOString(),
             conversation_id: conversationId,
             is_new_conversation: isNewConversation,
-            user_id: userId,
+            user_id: userId, // This will now accept "anonymous" for non-logged in users
             conversation_history: formattedHistory,
             request_id: requestId, // Add request ID to help with debugging
             has_files: processedFiles && processedFiles.length > 0, // Add this to indicate files are attached
@@ -745,17 +749,21 @@ export class ApiClient {
    */
   private async _createConversationInternal(userId: string, title: string): Promise<string | null> {
     try {
-      // Create a new conversation
+      // If this is an anonymous user, use a special user ID instead of null
+      const actualUserId = userId === "anonymous" ? ANONYMOUS_USER_ID : userId
+
+      // Create a new conversation with only the essential fields
+      const conversationData = {
+        user_id: actualUserId, // Use the special anonymous ID instead of null
+        title,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+
+      // Insert the conversation
       const { data, error } = await this.supabase
         .from("chat_conversations")
-        .insert([
-          {
-            user_id: userId,
-            title,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-        ])
+        .insert([conversationData])
         .select("id")
         .single()
 
@@ -792,64 +800,78 @@ export class ApiClient {
     assistantMessage: Message,
   ): Promise<void> {
     try {
+      console.log(`Starting to save messages to conversation ${conversationId}`)
+
       // Update the conversation's updated_at timestamp
-      await this.supabase
+      const { error: updateError } = await this.supabase
         .from("chat_conversations")
         .update({ updated_at: new Date().toISOString() })
         .eq("id", conversationId)
+
+      if (updateError) {
+        console.error("Error updating conversation timestamp:", updateError)
+      }
 
       // Create timestamps with a small offset to ensure proper ordering
       const userTimestamp = userMessage.timestamp
       const assistantTimestamp = new Date(userTimestamp.getTime() + 100) // 100ms later
 
-      // Save user message
-      const { data: userData, error: userError } = await this.supabase
-        .from("chat_messages")
-        .insert([
-          {
-            conversation_id: conversationId,
-            content: userMessage.content,
-            role: userMessage.role,
-            ai_model: userMessage.model?.toLowerCase() || assistantMessage.model?.toLowerCase() || "chatgpt", // Default to ChatGPT if no model is specified
-            created_at: userTimestamp.toISOString(),
-            tokens_used: 0,
-          },
-        ])
-        .select()
+      // Save user message with only essential fields
+      try {
+        const userMessageData = {
+          conversation_id: conversationId,
+          content: userMessage.content,
+          role: userMessage.role,
+          ai_model: userMessage.model?.toLowerCase() || assistantMessage.model?.toLowerCase() || "chatgpt", // Default to ChatGPT if no model is specified
+          created_at: userTimestamp.toISOString(),
+          tokens_used: 0,
+        }
 
-      if (userError) {
-        console.error("Error saving user message:", userError)
-      } else {
-        console.log("Successfully saved user message:", {
-          id: userData?.[0]?.id,
-          role: "user",
-          content: userMessage.content.substring(0, 20) + "...",
-        })
+        const { data: userData, error: userError } = await this.supabase
+          .from("chat_messages")
+          .insert([userMessageData])
+          .select()
+
+        if (userError) {
+          console.error("Error saving user message:", userError)
+        } else {
+          console.log("Successfully saved user message:", {
+            id: userData?.[0]?.id,
+            role: "user",
+            content: userMessage.content.substring(0, 20) + "...",
+          })
+        }
+      } catch (error) {
+        console.error("Error saving user message with basic fields:", error)
       }
 
-      // Save assistant message
-      const { data: assistantData, error: assistantError } = await this.supabase
-        .from("chat_messages")
-        .insert([
-          {
-            conversation_id: conversationId,
-            content: assistantMessage.content,
-            role: assistantMessage.role,
-            ai_model: assistantMessage.model?.toLowerCase() || null,
-            created_at: assistantTimestamp.toISOString(), // Use the offset timestamp
-            tokens_used: 0,
-          },
-        ])
-        .select()
+      // Save assistant message with only essential fields
+      try {
+        const assistantMessageData = {
+          conversation_id: conversationId,
+          content: assistantMessage.content,
+          role: assistantMessage.role,
+          ai_model: assistantMessage.model?.toLowerCase() || null,
+          created_at: assistantTimestamp.toISOString(), // Use the offset timestamp
+          tokens_used: 0,
+        }
 
-      if (assistantError) {
-        console.error("Error saving assistant message:", assistantError)
-      } else {
-        console.log("Successfully saved assistant message:", {
-          id: assistantData?.[0]?.id,
-          role: "assistant",
-          content: assistantMessage.content.substring(0, 20) + "...",
-        })
+        const { data: assistantData, error: assistantError } = await this.supabase
+          .from("chat_messages")
+          .insert([assistantMessageData])
+          .select()
+
+        if (assistantError) {
+          console.error("Error saving assistant message:", assistantError)
+        } else {
+          console.log("Successfully saved assistant message:", {
+            id: assistantData?.[0]?.id,
+            role: "assistant",
+            content: assistantMessage.content.substring(0, 20) + "...",
+          })
+        }
+      } catch (error) {
+        console.error("Error saving assistant message with basic fields:", error)
       }
 
       console.log(
@@ -864,6 +886,16 @@ export class ApiClient {
    * Fetch a conversation by ID
    */
   async fetchConversation(conversationId: string, userId: string): Promise<Conversation | null> {
+    // If userId is "anonymous", we can't fetch from the database
+    if (userId === "anonymous") {
+      console.log("Anonymous user cannot fetch conversations from database")
+      return {
+        id: null,
+        title: "New Conversation",
+        messages: [],
+      }
+    }
+
     // Maximum number of retry attempts
     const maxRetries = 3
     let retryCount = 0
@@ -871,7 +903,7 @@ export class ApiClient {
 
     while (retryCount < maxRetries) {
       try {
-        console.log(`Attempt ${retryCount + 1} to fetch conversation ${conversationId}`)
+        console.log(`Attempt ${retryCount + 1} to fetch conversation ${conversationId} for user ${userId}`)
 
         // Fetch the conversation
         const { data: conversation, error: conversationError } = await this.supabase
@@ -991,6 +1023,9 @@ export class ApiClient {
    */
   async deleteConversation(conversationId: string, userId: string): Promise<boolean> {
     try {
+      // If this is an anonymous user, use the special user ID
+      const actualUserId = userId === "anonymous" ? ANONYMOUS_USER_ID : userId
+
       // First delete all messages for this conversation
       const { error: messagesError } = await this.supabase
         .from("chat_messages")
@@ -1007,7 +1042,7 @@ export class ApiClient {
         .from("chat_conversations")
         .delete()
         .eq("id", conversationId)
-        .eq("user_id", userId)
+        .eq("user_id", actualUserId)
 
       if (conversationError) {
         console.error("Error deleting conversation:", conversationError)
@@ -1026,6 +1061,9 @@ export class ApiClient {
    */
   async fetchDailyMessageCount(userId: string): Promise<number> {
     try {
+      // If this is an anonymous user, use the special user ID
+      const actualUserId = userId === "anonymous" ? ANONYMOUS_USER_ID : userId
+
       // Get today's date in ISO format (YYYY-MM-DD)
       const today = new Date().toISOString().split("T")[0]
 
@@ -1033,7 +1071,7 @@ export class ApiClient {
       const { data: conversations, error: conversationsError } = await this.supabase
         .from("chat_conversations")
         .select("id")
-        .eq("user_id", userId)
+        .eq("user_id", actualUserId)
 
       if (conversationsError || !conversations || conversations.length === 0) {
         return 0
@@ -1067,6 +1105,11 @@ export class ApiClient {
    */
   async ensureUserProfile(userId: string, email?: string): Promise<boolean> {
     try {
+      // Don't create profiles for anonymous users
+      if (userId === "anonymous") {
+        return true
+      }
+
       // Check if user profile exists
       const { data: profile, error: profileError } = await this.supabase
         .from("profiles")

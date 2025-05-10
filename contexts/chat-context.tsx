@@ -2,7 +2,6 @@
 
 import type React from "react"
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react"
-import { v4 as uuidv4 } from "uuid"
 import { useToast } from "@/components/ui/use-toast"
 import { useAuth } from "@/components/auth-provider"
 import { apiClient, type Message, type AIModel } from "@/utils/api-client"
@@ -39,15 +38,23 @@ export function useChat() {
 }
 
 // Provider component that wraps the app and provides the chat context
-export function ChatProvider({ children }: { children: React.ReactNode }) {
+interface ChatProviderProps {
+  children: React.ReactNode
+  initialConversationId?: string | null
+}
+
+export function ChatProvider({ children, initialConversationId = null }: ChatProviderProps) {
   // State for messages, loading status, and selected model
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [selectedModel, setSelectedModel] = useState<AIModel>("ChatGPT") // Changed default from Gemini to ChatGPT
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null)
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(initialConversationId)
   const [dailyMessageCount, setDailyMessageCount] = useState(0)
   const maxDailyMessages = 50 // Maximum number of messages per day
   const [hasReachedDailyLimit, setHasReachedDailyLimit] = useState(false)
+  const [isDataLoaded, setIsDataLoaded] = useState(false)
+  const [isSending, setIsSending] = useState(false)
+  const initialLoadAttempted = useRef(false)
 
   // Get the current user from auth context
   const { user } = useAuth()
@@ -59,10 +66,51 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   // Load daily message count on mount and when user changes
   useEffect(() => {
-    if (user) {
-      loadDailyMessageCount()
+    const loadUserData = async () => {
+      try {
+        if (user) {
+          // If user is logged in, load their data
+          const dailyCount = await apiClient.fetchDailyMessageCount(user.id)
+          setDailyMessageCount(dailyCount)
+
+          // Ensure user profile exists if logged in
+          await apiClient.ensureUserProfile(user.id, user.email)
+        } else {
+          // For non-logged in users, set default values
+          setDailyMessageCount(0)
+          // No need to check for subscription since they're not logged in
+        }
+
+        setIsDataLoaded(true)
+      } catch (error) {
+        console.error("Error loading user data:", error)
+        setIsDataLoaded(true) // Still mark as loaded even if there's an error
+      }
     }
-  }, [user])
+
+    if (!isLoading) {
+      loadUserData()
+    }
+  }, [user, isLoading])
+
+  // Load initial conversation if provided
+  useEffect(() => {
+    const loadInitialConversation = async () => {
+      if (initialConversationId && user && !initialLoadAttempted.current) {
+        initialLoadAttempted.current = true
+        console.log("Loading initial conversation:", initialConversationId)
+        try {
+          await loadConversation(initialConversationId)
+        } catch (error) {
+          console.error("Error loading initial conversation:", error)
+        }
+      }
+    }
+
+    if (isDataLoaded && !isLoading) {
+      loadInitialConversation()
+    }
+  }, [initialConversationId, user, isDataLoaded, isLoading])
 
   useEffect(() => {
     setHasReachedDailyLimit(dailyMessageCount >= maxDailyMessages)
@@ -106,193 +154,157 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   // Function to send a message
   const sendMessage = useCallback(
     async (content: string, files?: File[]) => {
-      if (!content.trim() && (!files || files.length === 0)) return
-      if (!user) {
-        toast({
-          title: "Error",
-          description: "You must be logged in to send messages",
-          variant: "destructive",
-        })
-        return
-      }
-
-      if (hasReachedDailyLimit) {
-        toast({
-          title: "Daily Limit Reached",
-          description: `You've reached your limit of ${maxDailyMessages} messages per day.`,
-          variant: "destructive",
-        })
-        return
-      }
-
-      // Create a new user message
-      const userMessage: Message = {
-        id: uuidv4(),
-        content,
-        role: "user",
-        timestamp: new Date(),
-        files,
-      }
-
-      // Create a placeholder for the assistant's response
-      const assistantMessage: Message = {
-        id: uuidv4(),
-        content: "",
-        role: "assistant",
-        timestamp: new Date(),
-        model: selectedModel,
-        isStreaming: true,
-      }
-
-      // Add the messages to the state
-      setMessages((prev) => [...prev, userMessage, assistantMessage])
-
-      // Set loading state
-      setIsLoading(true)
-
-      // Store the ID of the streaming message
-      streamingMessageRef.current = assistantMessage.id
+      if (isLoading || isSending) return
 
       try {
-        // Check if this is a new conversation
-        const isNewConversation = !currentConversationId
-        let conversationId = currentConversationId
+        setIsSending(true)
 
-        // If this is a new conversation, create one
-        if (isNewConversation && user) {
-          // Use the first few words of the message as the title
-          const title = content.split(" ").slice(0, 5).join(" ") + "..."
-          conversationId = await apiClient.createConversation(user.id, title)
-          if (conversationId) {
-            setCurrentConversationId(conversationId)
+        // Generate a unique ID for this message
+        const messageId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+
+        // Create user message
+        const userMessage: Message = {
+          id: messageId,
+          content,
+          role: "user",
+          timestamp: new Date(),
+          files,
+          userId: user?.id || "anonymous", // Add userId to track message ownership
+        }
+
+        // Add user message to state
+        setMessages((prev) => [...prev, userMessage])
+
+        // Create a placeholder for the assistant's response
+        const assistantMessageId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+
+        // Create assistant message with streaming flag
+        const assistantMessage: Message = {
+          id: assistantMessageId,
+          content: "",
+          role: "assistant",
+          timestamp: new Date(),
+          model: selectedModel,
+          isStreaming: true,
+          userId: user?.id || "anonymous", // Add userId to track message ownership
+        }
+
+        // Add assistant message to state
+        setMessages((prev) => [...prev, assistantMessage])
+
+        // Scroll to bottom
+        setTimeout(() => {
+          const chatContainer = document.querySelector(".chat-container")
+          if (chatContainer) {
+            chatContainer.scrollTop = chatContainer.scrollHeight
+          }
+        }, 100)
+
+        let streamedContent = ""
+
+        // Create a new conversation if needed
+        let conversationIdToUse = currentConversationId
+        if (!conversationIdToUse) {
+          try {
+            // Create a new conversation with a title based on the first message
+            const title = content.length > 30 ? content.substring(0, 30) + "..." : content
+            const newConversationId = await apiClient.createConversation(user?.id || "anonymous", title)
+            if (newConversationId) {
+              conversationIdToUse = newConversationId
+              setCurrentConversationId(newConversationId)
+              console.log("Created new conversation:", newConversationId)
+            }
+          } catch (error) {
+            console.error("Error creating new conversation:", error)
           }
         }
 
-        // Function to handle streaming chunks
-        const handleChunk = (chunk: string) => {
-          setMessages((prev) =>
-            prev.map((msg) => {
-              if (msg.id === assistantMessage.id) {
-                return {
-                  ...msg,
-                  content: msg.content + chunk,
-                }
-              }
-              return msg
-            }),
-          )
-        }
-
-        // Function to handle completion
-        const handleComplete = (fullText: string) => {
-          setMessages((prev) =>
-            prev.map((msg) => {
-              if (msg.id === assistantMessage.id) {
-                return {
-                  ...msg,
-                  content: fullText,
-                  isStreaming: false,
-                }
-              }
-              return msg
-            }),
-          )
-
-          // Clear the streaming message ref
-          streamingMessageRef.current = null
-
-          // Save the messages to the database if we have a conversation ID
-          if (conversationId) {
-            apiClient.saveMessages(conversationId, userMessage, {
-              ...assistantMessage,
-              content: fullText,
-              isStreaming: false,
-            })
-          }
-
-          // Update the daily message count
-          setDailyMessageCount((prev) => prev + 1)
-
-          // Set loading state
-          setIsLoading(false)
-        }
-
-        // Function to handle errors
-        const handleError = (error: string) => {
-          setMessages((prev) =>
-            prev.map((msg) => {
-              if (msg.id === assistantMessage.id) {
-                return {
-                  ...msg,
-                  content: `Error: ${error}`,
-                  error: true,
-                  isStreaming: false,
-                }
-              }
-              return msg
-            }),
-          )
-
-          // Clear the streaming message ref
-          streamingMessageRef.current = null
-
-          // Set loading state
-          setIsLoading(false)
-
-          // Show an error toast
-          toast({
-            title: "Error",
-            description: `Failed to get a response: ${error}`,
-            variant: "destructive",
-          })
-        }
-
-        // Send the message to the API
+        // Stream the response
         await apiClient.streamMessage(
           content,
           selectedModel,
-          user.id,
-          handleChunk,
-          handleComplete,
-          handleError,
-          conversationId,
-          isNewConversation,
-          messages,
-          files,
-        )
-      } catch (error: any) {
-        console.error("Error sending message:", error)
+          user?.id || "anonymous", // Use "anonymous" for non-logged in users
+          (chunk) => {
+            // Update content as it streams in
+            streamedContent += chunk
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === assistantMessageId
+                  ? {
+                      ...msg,
+                      content: streamedContent,
+                    }
+                  : msg,
+              ),
+            )
+          },
+          (fullText) => {
+            // Update with the complete response
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === assistantMessageId
+                  ? {
+                      ...msg,
+                      content: fullText,
+                      isStreaming: false,
+                    }
+                  : msg,
+              ),
+            )
 
-        // Update the assistant message with the error
-        setMessages((prev) =>
-          prev.map((msg) => {
-            if (msg.id === assistantMessage.id) {
-              return {
-                ...msg,
-                content: `Error: ${error.message || "Unknown error"}`,
-                error: true,
+            // Save messages for both logged-in and non-logged-in users
+            if (conversationIdToUse) {
+              console.log("Saving messages to conversation:", conversationIdToUse)
+              apiClient.saveMessages(conversationIdToUse, userMessage, {
+                ...assistantMessage,
+                content: fullText,
                 isStreaming: false,
-              }
+              })
+            } else {
+              console.log("Not saving messages - conversationId missing", {
+                userId: user?.id || "anonymous",
+                conversationId: conversationIdToUse,
+              })
             }
-            return msg
+
+            // Increment message count for logged-in users
+            if (user) {
+              setDailyMessageCount((prev) => prev + 1)
+            }
+          },
+          (error) => {
+            // Handle errors
+            console.error("Error streaming message:", error)
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === assistantMessageId
+                  ? {
+                      ...msg,
+                      content: `Error: ${error}`,
+                      error: true,
+                      isStreaming: false,
+                    }
+                  : msg,
+              ),
+            )
+          },
+          conversationIdToUse,
+          !conversationIdToUse, // isNewConversation
+          messages, // conversation history
+        )
+      } catch (error) {
+        console.error("Error sending message:", error)
+        // Dispatch error event
+        window.dispatchEvent(
+          new CustomEvent("chat-error", {
+            detail: { message: "Failed to send message. Please try again." },
           }),
         )
-
-        // Clear the streaming message ref
-        streamingMessageRef.current = null
-
-        // Set loading state
-        setIsLoading(false)
-
-        // Show an error toast
-        toast({
-          title: "Error",
-          description: `Failed to send message: ${error.message || "Unknown error"}`,
-          variant: "destructive",
-        })
+      } finally {
+        setIsSending(false)
       }
     },
-    [user, selectedModel, currentConversationId, messages, toast, hasReachedDailyLimit, maxDailyMessages],
+    [messages, selectedModel, currentConversationId, isLoading, isSending, user],
   )
 
   // Function to reset the chat
@@ -319,14 +331,24 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   // Function to load a conversation
   const loadConversation = useCallback(
     async (conversationId: string): Promise<boolean> => {
-      if (!user) return false
-
       try {
-        // Reset the current chat
-        resetChat()
-
         // Set loading state
         setIsLoading(true)
+
+        // Reset the messages first to clear the previous conversation
+        setMessages([])
+
+        // Set the conversation ID immediately to prevent multiple loads
+        setCurrentConversationId(conversationId)
+
+        // If user is not logged in, we can't load conversations from the database
+        if (!user) {
+          console.log("User not logged in, cannot load conversation")
+          setIsLoading(false)
+          return false
+        }
+
+        console.log(`Loading conversation: ${conversationId} for user: ${user.id}`)
 
         // Load the conversation
         const conversation = await apiClient.fetchConversation(conversationId, user.id)
@@ -335,7 +357,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         if (conversation) {
           console.log(
             "Setting messages from conversation:",
-            conversation.messages.map((m) => ({ id: m.id.substring(0, 8), role: m.role })),
+            conversation.messages.map((m) => ({ id: m.id?.substring(0, 8), role: m.role })),
           )
 
           // Make sure we have messages
@@ -344,9 +366,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           } else {
             console.warn("Conversation loaded but has no messages")
           }
-
-          // Set the conversation ID
-          setCurrentConversationId(conversation.id)
 
           // Set loading state
           setIsLoading(false)
@@ -367,7 +386,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         return false
       }
     },
-    [user, resetChat],
+    [user],
   )
 
   // Function to delete a conversation

@@ -1,183 +1,67 @@
 "use client"
-
-import { useState, useEffect } from "react"
+import { useLanguage } from "@/contexts/language-context"
 import { useAuth } from "@/components/auth-provider"
-import { useRouter } from "next/navigation"
-import { ArrowLeft } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import { useToast } from "@/components/ui/use-toast"
+import { useState } from "react"
 
 export default function SettingsPage() {
-  const { user, isLoading } = useAuth()
-  const router = useRouter()
-  const [displayName, setDisplayName] = useState("")
-  const [email, setEmail] = useState("")
-  const supabase = createClientComponentClient()
-  const { toast } = useToast()
-
-  useEffect(() => {
-    if (!isLoading && !user) {
-      router.push("/login")
-    }
-  }, [user, isLoading, router])
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (!user) return
-
-      try {
-        const { data, error } = await supabase.from("profiles").select("*").eq("id", user.id).single()
-
-        if (error) {
-          console.error("Error fetching profile:", error)
-          return
-        }
-
-        if (data) {
-          setDisplayName(data.display_name || "")
-        }
-
-        // Set email from auth user
-        setEmail(user.email || "")
-      } catch (error) {
-        console.error("Unexpected error fetching profile:", error)
-      }
-    }
-
-    fetchProfile()
-  }, [user, supabase])
-
-  const handleSaveChanges = async () => {
-    if (!user) return
-
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          display_name: displayName,
-        })
-        .eq("id", user.id)
-
-      if (error) {
-        console.error("Error updating profile:", error)
-        toast({
-          title: "Error",
-          description: "Failed to update profile. Please try again.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      toast({
-        title: "Success",
-        description: "Your profile has been updated.",
-      })
-    } catch (error) {
-      console.error("Unexpected error updating profile:", error)
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-black">
-        <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-white"></div>
-          <p className="mt-4 text-white">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!user) {
-    return null // Will redirect in useEffect
-  }
+  const { language, setLanguage, t } = useLanguage()
+  const { user } = useAuth()
+  const [isLoading, setIsLoading] = useState(false)
 
   return (
     <div className="flex h-screen flex-col bg-[#0f0f10] text-white">
       <div className="flex flex-1 overflow-hidden">
         <main className="flex-1 overflow-auto p-8">
-          <div className="mx-auto max-w-3xl">
-            <div className="mb-6 flex items-center">
-              <Button
-                variant="outline"
-                size="sm"
-                className="mr-4 border-[#333] bg-transparent hover:bg-[#1a1a1a]"
-                onClick={() => router.back()}
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-              </Button>
-              <h1 className="text-2xl font-bold">Settings</h1>
-            </div>
+          <div className="mx-auto max-w-4xl">
+            <h1 className="mb-8 text-3xl font-bold">{t("settings.title")}</h1>
 
-            {/* Updated Plan Summary */}
-            <div className="mb-6 rounded-lg border border-[#333] bg-[#111] p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium">Plan Summary</h2>
-                <span className="text-xs bg-[#1a1a1a] text-emerald-400 px-2 py-1 rounded">Free Plan</span>
-              </div>
+            <div className="space-y-6">
+              {/* User Information Section */}
+              <div className="rounded-md border border-[#333333] bg-[#111] p-6">
+                <h2 className="mb-4 text-xl font-semibold">{t("settings.userInformation")}</h2>
 
-              <div className="mb-4">
-                <p className="text-sm text-gray-300">
-                  You're currently on the Free Plan with unlimited access to all features.
-                </p>
-              </div>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-400">{t("profile.email")}</p>
+                    <p className="text-lg">{user?.email || "-"}</p>
+                  </div>
 
-              <div className="grid grid-cols-1 gap-2 mb-4">
-                <div className="flex items-center">
-                  <div className="h-2 w-2 rounded-full bg-emerald-400 mr-2"></div>
-                  <p className="text-sm text-gray-300">Unlimited messages</p>
-                </div>
-                <div className="flex items-center">
-                  <div className="h-2 w-2 rounded-full bg-emerald-400 mr-2"></div>
-                  <p className="text-sm text-gray-300">Unlimited pages</p>
-                </div>
-                <div className="flex items-center">
-                  <div className="h-2 w-2 rounded-full bg-emerald-400 mr-2"></div>
-                  <p className="text-sm text-gray-300">All AI models</p>
-                </div>
-                <div className="flex items-center">
-                  <div className="h-2 w-2 rounded-full bg-emerald-400 mr-2"></div>
-                  <p className="text-sm text-gray-300">Priority support</p>
+                  <div>
+                    <p className="text-sm text-gray-400">{t("settings.userId")}</p>
+                    <p className="text-lg">{user?.id || "-"}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-gray-400">{t("settings.accountCreated")}</p>
+                    <p className="text-lg">{user?.created_at ? new Date(user.created_at).toLocaleDateString() : "-"}</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Account Settings */}
-            <div className="rounded-lg border border-[#333] bg-[#111] p-6">
-              <h2 className="text-lg font-medium mb-4">Account Settings</h2>
+              {/* Language Section */}
+              <div className="rounded-md border border-[#333333] bg-[#111] p-6">
+                <h2 className="mb-4 text-xl font-semibold">{t("settings.language")}</h2>
 
-              <div className="space-y-4">
+                {/* Language Selection */}
                 <div>
-                  <label className="mb-2 block text-xs font-medium text-gray-300">Display Name</label>
-                  <Input
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    className="bg-[#1a1a1a] border-[#333] text-white text-sm"
-                    placeholder="Enter your display name"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-xs font-medium text-gray-300">Email Address</label>
-                  <Input value={email} disabled className="bg-[#1a1a1a] border-[#333] text-white opacity-70 text-sm" />
-                  <p className="mt-1 text-xs text-gray-400">Email address cannot be changed</p>
-                </div>
-
-                <div className="flex justify-end">
-                  <Button
-                    className="bg-[#141415] text-white border border-[#ffffff1f] hover:bg-[#1a1a1a] hover:text-white text-xs"
-                    onClick={handleSaveChanges}
-                  >
-                    Save Changes
-                  </Button>
+                  <div className="flex space-x-4">
+                    <button
+                      onClick={() => setLanguage("en")}
+                      className={`px-4 py-2 rounded-md ${
+                        language === "en" ? "bg-indigo-600 text-white" : "bg-[#1a1a1a] text-gray-300 hover:bg-[#252525]"
+                      }`}
+                    >
+                      {t("language.english")}
+                    </button>
+                    <button
+                      onClick={() => setLanguage("ar")}
+                      className={`px-4 py-2 rounded-md ${
+                        language === "ar" ? "bg-indigo-600 text-white" : "bg-[#1a1a1a] text-gray-300 hover:bg-[#252525]"
+                      }`}
+                    >
+                      {t("language.arabic")}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

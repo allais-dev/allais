@@ -2,6 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Removed the problematic @import statements */
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+/* Base styles */
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(to bottom, transparent, rgb(var(--background-end-rgb))) rgb(var(--background-start-rgb));
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -60,8 +82,21 @@
 
 html,
 body {
-  background-color: #0f0f10;
+  background-color: #141414 !important;
   color: white;
+}
+
+/* RTL Support - Updated font handling with higher specificity */
+html[dir="rtl"] {
+  font-family: "Tajawal", sans-serif !important;
+}
+
+html[dir="rtl"] * {
+  font-family: "Tajawal", sans-serif !important;
+}
+
+html[dir="ltr"] {
+  font-family: var(--font-noto-sans), sans-serif;
 }
 
 /* Custom z-index for header */
@@ -753,4 +788,769 @@ code {
 /* Smooth scrolling for anchor links */
 html {
   scroll-behavior: smooth;
+}
+
+/* NEW STYLES FOR SUGGESTION CARDS AND BACKGROUND */
+
+/* Change background color for all pages */
+body,
+.bg-[#0f0f10], 
+div[class*="bg-[#0f0f10]"] {
+  background-color: #141414 !important;
+}
+
+/* Slow down auto-scroll animation */
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.auto-scroll {
+  animation: scroll 60s linear infinite !important; /* Slowed down from 30s to 60s */
+}
+
+/* Font sizes for suggestion cards - desktop and mobile */
+@media (min-width: 768px) {
+  /* Larger text on desktop with vw units */
+  .SuggestionCard h3,
+  button[class*="border-0 bg-[#1e1e1e]"] h3 {
+    font-size: 1.6vw !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Hide description text on desktop */
+  .SuggestionCard p,
+  button[class*="border-0 bg-[#1e1e1e]"] p {
+    display: none !important;
+  }
+}
+
+/* Mobile font size */
+@media (max-width: 767px) {
+  .SuggestionCard h3,
+  button[class*="border-0 bg-[#1e1e1e]"] h3 {
+    font-size: 4vw !important;
+    line-height: 1.5 !important;
+  }
+}
+
+/* Apply styles to suggestion cards */
+button[class*="border-0 bg-[#1e1e1e]"] {
+  background-color: #1e1e1e !important;
+  min-height: 40px !important;
+}
+
+/* Target all sidebar elements */
+.border-r.border-[#333],
+div[class*="border-r border-[#333]"],
+aside,
+nav[class*="bg-"],
+.sidebar,
+div[class*="sidebar"],
+div[class*="w-64"],
+div[class*="w-60"],
+div[class*="w-56"],
+nav,
+aside,
+.bg-[#0f0f10],
+div[class*="bg-[#0f0f10]"] {
+  background-color: #141414 !important;
+  border-color: #222 !important;
+}
+
+/* Target all chat interface elements */
+.bg-[#1a1a1a], 
+div[class*="bg-[#1a1a1a]"],
+.bg-[#0f0f10], 
+div[class*="bg-[#0f0f10]"],
+main,
+section,
+.chat-container,
+div[class*="chat-container"],
+.message-container,
+div[class*="message-container"],
+.chat-window,
+div[class*="chat-window"],
+.chat-area,
+div[class*="chat-area"],
+.chat-interface,
+div[class*="chat-interface"],
+.chat-messages,
+div[class*="chat-messages"],
+.message-list,
+div[class*="message-list"] {
+  background-color: #141414 !important;
+}
+
+/* Style for "Ask me anything" text - UPDATED */
+h1.mb-8.text-4xl,
+h1[class*="mb-8 text-4xl"],
+.text-2xl[class*="text-gradient"],
+[class*="text-2xl text-gradient"] {
+  letter-spacing: -.025em !important;
+  font-size: 2.17rem !important;
+  font-weight: 800 !important;
+}
+
+/* Style for "ChatGPT & Gemini in One Place" text - UPDATED */
+h3.mb-2.text-lg,
+h3[class*="mb-2 text-lg"] {
+  letter-spacing: -.025em !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+}
+
+/* Make sure the suggestion card title is bigger on desktop */
+@media (min-width: 768px) {
+  button[class*="border-0 bg-[#1e1e1e]"] h3 {
+    font-size: 1.6vw !important;
+  }
+}
+
+/* Make sure the suggestion card title is appropriate on mobile */
+@media (max-width: 767px) {
+  button[class*="border-0 bg-[#1e1e1e]"] h3 {
+    font-size: 4vw !important; /* Larger on mobile for better readability */
+  }
+}
+
+/* Remove icons from suggestion cards */
+button[class*="border-0 bg-[#1e1e1e]"] div:first-child {
+  display: none !important;
+}
+
+/* Center the text in suggestion cards */
+button[class*="border-0 bg-[#1e1e1e]"] {
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+button[class*="border-0 bg-[#1e1e1e]"] div:nth-child(2) {
+  text-align: center !important;
+}
+
+/* Adjust padding for suggestion cards without icons */
+button[class*="border-0 bg-[#1e1e1e]"] {
+  padding: 0.75rem !important;
+}
+
+/* Force background color on all possible chat and sidebar elements */
+.dark .bg-background,
+.dark [class*="bg-background"],
+.dark .bg-card,
+.dark [class*="bg-card"],
+.dark .bg-popover,
+.dark [class*="bg-popover"],
+.dark .bg-primary,
+.dark [class*="bg-primary"],
+.dark .bg-secondary,
+.dark [class*="bg-secondary"],
+.dark .bg-muted,
+.dark [class*="bg-muted"],
+.dark .bg-accent,
+.dark [class*="bg-accent"],
+.bg-[#0f0f10],
+.bg-[#1a1a1a],
+.bg-[#111],
+.bg-[#121212],
+.bg-[#181818],
+.bg-[#1c1c1c],
+.bg-[#1f1f1f],
+.bg-[#222],
+.bg-[#2a2a2a],
+.bg-[#2d2d2d],
+.bg-[#333],
+div[class*="bg-[#0f0f10]"],
+div[class*="bg-[#1a1a1a]"],
+div[class*="bg-[#111]"],
+div[class*="bg-[#121212]"],
+div[class*="bg-[#181818]"],
+div[class*="bg-[#1c1c1c]"],
+div[class*="bg-[#1f1f1f]"],
+div[class*="bg-[#222]"],
+div[class*="bg-[#2a2a2a]"],
+div[class*="bg-[#2d2d2d]"],
+div[class*="bg-[#333]"] {
+  background-color: #141414 !important;
+}
+
+/* Force background color on all possible containers */
+.container,
+.wrapper,
+.content,
+.page,
+.layout,
+.app,
+div[class*="container"],
+div[class*="wrapper"],
+div[class*="content"],
+div[class*="page"],
+div[class*="layout"],
+div[class*="app"] {
+  background-color: #141414 !important;
+}
+
+/* Add mask-image gradient to suggestion cards container */
+.auto-scroll,
+div[class*="auto-scroll"],
+.suggestions-container,
+div[class*="suggestions-container"],
+div[class*="overflow-x-auto"] {
+  --mask-from: 7rem;
+  --mask-to: calc(100% - 7rem);
+  mask-image: linear-gradient(to right, transparent, black var(--mask-from), black var(--mask-to), transparent) !important;
+  -webkit-mask-image: linear-gradient(to right, transparent, black var(--mask-from), black var(--mask-to), transparent) !important;
+}
+
+/* Add mask variables */
+.\[--mask-to\:calc\$100\%\-7rem\],
+[class*="[--mask-to:calc(100%-7rem)]"] {
+  --mask-to: calc(100% - 7rem);
+}
+
+.\[--mask-from\:7rem\],
+[class*="[--mask-from:7rem]"] {
+  --mask-from: 7rem;
+}
+
+/* Force background color for elements that might be missed */
+body > div,
+#__next,
+#root,
+.app-container,
+.main-container,
+.layout-container,
+div[id*="__next"],
+div[id*="root"],
+div[class*="app-container"],
+div[class*="main-container"],
+div[class*="layout-container"] {
+  background-color: #141414 !important;
+}
+
+/* More targeted background color rules */
+[style*="background-color"]:not(.message-bubble):not([class*="bg-[#1a1a1a]"]),
+[style*="background:#"]:not(.message-bubble):not([class*="bg-[#1a1a1a]"]),
+[style*="background: #"]:not(.message-bubble):not([class*="bg-[#1a1a1a]"]),
+[style*="background-color:#"]:not(.message-bubble):not([class*="bg-[#1a1a1a]"]),
+[style*="background-color: #"]:not(.message-bubble):not([class*="bg-[#1a1a1a]"]) {
+  background-color: #141414 !important;
+}
+
+/* Apply bg-[#141414] to most elements with bg- classes, but exclude specific ones */
+[class*="bg-"]:not(.bg-[#1a1a1a]):not([class*="bg-[#1a1a1a]"]):not(.bg-[#1e1e1e]):not([class*="bg-[#1e1e1e]"]):not(
+    .message-bubble
+  ):not(.suggestion-card) {
+  background-color: #141414 !important;
+}
+
+/* Ensure message bubbles have the correct background */
+.bg-[#1a1a1a], [class*="bg-[#1a1a1a]"], .message-bubble, .rounded-lg.bg-[#1a1a1a] {
+  background-color: #1a1a1a !important;
+}
+
+/* Ensure suggestion cards have the correct background */
+.bg-[#1e1e1e], [class*="bg-[#1e1e1e]"], .suggestion-card, button[class*="border-0 bg-[#1e1e1e]"] {
+  background-color: #1e1e1e !important;
+}
+
+/* Add these styles to fix the input background color */
+input,
+textarea,
+select,
+.input,
+[type="text"],
+[type="email"],
+[type="url"],
+[type="password"],
+[type="number"],
+[type="date"],
+[type="datetime-local"],
+[type="month"],
+[type="search"],
+[type="tel"],
+[type="time"],
+[type="week"],
+[multiple],
+textarea,
+select {
+  background-color: #1a1a1a !important;
+  border-color: #333 !important;
+  color: white !important;
+}
+
+/* Ensure chat input container has the correct background color */
+.flex.flex-wrap.items-center.rounded-lg,
+div[class*="flex flex-wrap items-center rounded-lg"],
+.chat-input-container,
+div[class*="chat-input-container"] {
+  background-color: #1a1a1a !important;
+  border-color: #1a1a1a !important;
+}
+
+/* Make sure all elements inside the chat input container maintain proper styling */
+.flex.flex-wrap.items-center.rounded-lg *,
+div[class*="flex flex-wrap items-center rounded-lg"] * {
+  background-color: transparent !important;
+}
+
+/* Fix hover buttons inside chat input */
+.flex.flex-wrap.items-center.rounded-lg button:hover,
+div[class*="flex flex-wrap items-center rounded-lg"] button:hover {
+  background-color: #252525 !important;
+}
+
+/* Fix hover behavior on suggestion cards - completely disable animation pause */
+.auto-scroll,
+div[class*="auto-scroll"],
+.suggestions-container,
+div[class*="suggestions-container"] {
+  pointer-events: none !important;
+  animation-play-state: running !important;
+}
+
+/* But enable pointer events on the actual buttons */
+button[class*="border-0 bg-[#1e1e1e]"] {
+  pointer-events: auto !important;
+}
+
+/* Prevent animation from restarting on hover */
+.auto-scroll:hover,
+div[class*="auto-scroll"]:hover,
+.suggestions-container:hover,
+div[class*="suggestions-container"]:hover,
+.auto-scroll:hover *,
+div[class*="auto-scroll"]:hover * {
+  animation-play-state: running !important;
+  animation: none;
+  animation: scroll 60s linear infinite !important;
+  animation-delay: inherit !important;
+  animation-play-state: running !important;
+}
+
+/* Make sure the Google sign-in button keeps its original styling */
+button[onClick*="Google"],
+button[onclick*="Google"],
+button:has(svg[viewBox="0 0 24 24"]:has(path[fill="#4285F4"])) {
+  background-color: #1a1a1a !important;
+  border-color: #333 !important;
+}
+
+button[onClick*="Google"]:hover,
+button[onclick*="Google"]:hover,
+button:has(svg[viewBox="0 0 24 24"]:has(path[fill="#4285F4"])):hover {
+  background-color: #252525 !important;
+}
+
+/* Add these typography style updates to the end of the file */
+
+h1.mb-8.text-4xl,
+h1[class*="mb-8 text-4xl"],
+.text-2xl[class*="text-gradient"],
+[class*="text-2xl text-gradient"] {
+  letter-spacing: -.025em !important;
+  font-size: 2.17rem !important;
+  font-weight: 800 !important;
+}
+
+h3.mb-2.text-lg,
+h3[class*="mb-2 text-lg"] {
+  letter-spacing: -.025em !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+}
+
+/* Smooth sidebar transition */
+.fixed.inset-0.z-50 {
+  transition: opacity 0.3s ease;
+}
+
+/* Ensure the sidebar opens smoothly */
+.fixed.inset-0.z-50 > div {
+  transition: transform 0.3s ease;
+}
+
+/* Fix for mobile view transitions */
+@media (max-width: 767px) {
+  .fixed.inset-0.z-50 {
+    opacity: 1;
+  }
+
+  .fixed.inset-0.z-50 > div {
+    transform: translateX(0);
+  }
+
+  .hidden.md\:relative.md\:block {
+    display: none;
+  }
+}
+
+/* Improve transitions for sidebar and overlay */
+.bg-black.bg-opacity-50 {
+  transition: opacity 0.3s ease;
+}
+
+.relative.z-50.h-full {
+  transition: transform 0.3s ease, width 0.3s ease;
+}
+
+/* Fix for sidebar toggling */
+.relative.z-50.h-full.w-\[270px\] {
+  transform: translateX(0);
+}
+
+/* Remove glitches during transitions */
+.transition-all {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  will-change: transform, opacity;
+}
+
+/* Sidebar animation */
+.transition-all.duration-150,
+.transition-all.duration-200,
+.transition-all.duration-300 {
+  transition-duration: 0.3s !important;
+}
+
+/* Fix sidebar animation glitches */
+.fixed.inset-0.z-50 {
+  will-change: opacity;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  perspective: 1000px;
+  -webkit-perspective: 1000px;
+}
+
+/* Prevent sidebar from disappearing too quickly */
+.fixed.inset-0.z-50.block {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Ensure sidebar stays visible during transition */
+.relative.z-50.h-full.w-\[270px\] {
+  visibility: visible !important;
+  opacity: 1 !important;
+  transform: translateX(0) !important;
+}
+
+/* Prevent sidebar from flickering */
+.fixed.inset-0.z-50,
+.fixed.inset-0.bg-black.bg-opacity-50.z-40 {
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+}
+
+/* Mobile sidebar specific styles */
+@media (max-width: 767px) {
+  /* Ensure sidebar is visible by default on mobile */
+  .fixed.inset-0.z-50.block {
+    display: block !important;
+  }
+
+  /* Ensure main content doesn't overflow under sidebar */
+  main.flex-1.overflow-auto {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+/* Ensure consistent heading size across devices */
+h1.text-xl {
+  font-size: 1.25rem !important; /* text-xl size */
+  line-height: 1.75rem !important;
+}
+
+@media (min-width: 768px) {
+  h1.text-xl {
+    font-size: 1.25rem !important; /* Keep the same size on desktop */
+    line-height: 1.75rem !important;
+  }
+}
+
+/* Add these styles to make the sidebar take full width on mobile */
+@media (max-width: 768px) {
+  .mobile-sidebar {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .mobile-sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .mobile-sidebar-close {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+  }
+}
+
+/* Mobile sidebar full width styles */
+@media (max-width: 767px) {
+  .fixed.inset-0.z-50 > div {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Ensure the sidebar content takes full width */
+  .fixed.inset-0.z-50 .w-\[270px\] {
+    width: 100% !important;
+  }
+}
+
+/* RTL Support */
+html[dir="rtl"] {
+  font-family: "Tajawal", sans-serif;
+}
+
+html[dir="ltr"] {
+  font-family: "Noto Sans", sans-serif;
+}
+
+/* RTL specific styles */
+html[dir="rtl"] .sidebar {
+  border-left: 1px solid #e5e7eb;
+  border-right: none;
+}
+
+html[dir="rtl"]
+  .border-r.border-[#333],
+html[dir="rtl"] div[class*="border-r border-[#333]"] {
+  border-right: none !important;
+  border-left: 1px solid #333333 !important;
+}
+
+html[dir="rtl"] .sidebar-toggle {
+  right: auto;
+  left: 1rem;
+}
+
+html[dir="rtl"] .sidebar-content {
+  text-align: right;
+}
+
+html[dir="rtl"] .sidebar-header {
+  flex-direction: row-reverse;
+}
+
+html[dir="rtl"] .sidebar-title {
+  margin-right: 0;
+  margin-left: auto;
+}
+
+html[dir="rtl"] .sidebar-icon {
+  margin-right: 0;
+  margin-left: 0.5rem;
+}
+
+html[dir="rtl"] .conversation-item {
+  flex-direction: row-reverse;
+}
+
+html[dir="rtl"] .conversation-item-icon {
+  margin-right: 0;
+  margin-left: 0.5rem;
+}
+
+html[dir="rtl"] .conversation-item-title {
+  text-align: right;
+}
+
+html[dir="rtl"] .chat-input-container {
+  flex-direction: row-reverse;
+}
+
+html[dir="rtl"] .chat-input {
+  text-align: right;
+}
+
+html[dir="rtl"] .chat-send-button {
+  margin-left: 0;
+  margin-right: 0.5rem;
+}
+
+html[dir="rtl"] .message-container {
+  flex-direction: row-reverse;
+}
+
+html[dir="rtl"] .message-content {
+  text-align: right;
+}
+
+html[dir="rtl"] .message-avatar {
+  margin-right: 0;
+  margin-left: 0.5rem;
+}
+
+/* Fix for flex direction in RTL */
+html[dir="rtl"] .flex-row {
+  flex-direction: row-reverse;
+}
+
+html[dir="rtl"] .ml-auto {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+html[dir="rtl"] .mr-auto {
+  margin-right: 0;
+  margin-left: auto;
+}
+
+html[dir="rtl"] .ml-1 {
+  margin-left: 0;
+  margin-right: 0.25rem;
+}
+
+html[dir="rtl"] .ml-2 {
+  margin-left: 0;
+  margin-right: 0.5rem;
+}
+
+html[dir="rtl"] .ml-3 {
+  margin-left: 0;
+  margin-right: 0.75rem;
+}
+
+html[dir="rtl"] .ml-4 {
+  margin-left: 0;
+  margin-right: 1rem;
+}
+
+html[dir="rtl"] .mr-1 {
+  margin-right: 0;
+  margin-left: 0.25rem;
+}
+
+html[dir="rtl"] .mr-2 {
+  margin-right: 0;
+  margin-left: 0.5rem;
+}
+
+html[dir="rtl"] .mr-3 {
+  margin-right: 0;
+  margin-left: 0.75rem;
+}
+
+html[dir="rtl"] .mr-4 {
+  margin-right: 0;
+  margin-left: 1rem;
+}
+
+/* Utility class to prevent RTL flipping for specific elements */
+.no-rtl-flip {
+  direction: ltr !important;
+}
+
+/* Mobile sidebar in RTL */
+@media (max-width: 768px) {
+  html[dir="rtl"] .mobile-sidebar {
+    right: 0;
+    left: auto;
+    transform: translateX(100%);
+  }
+
+  html[dir="rtl"] .mobile-sidebar.open {
+    transform: translateX(0);
+  }
+}
+
+/* Chat interface RTL fixes */
+html[dir="rtl"] .message-form {
+  direction: ltr; /* Keep the form LTR for proper input handling */
+}
+
+html[dir="rtl"] .message-form-inner {
+  flex-direction: row-reverse;
+}
+
+html[dir="rtl"] .message-input {
+  text-align: right;
+}
+
+/* App layout RTL fixes */
+html[dir="rtl"] .app-container {
+  flex-direction: row-reverse;
+}
+
+/* Settings page RTL fixes */
+html[dir="rtl"] .settings-container {
+  text-align: right;
+}
+
+html[dir="rtl"] .settings-section {
+  text-align: right;
+}
+
+html[dir="rtl"] .settings-option {
+  flex-direction: row-reverse;
+}
+
+/* Login/Register page RTL fixes */
+html[dir="rtl"] .auth-container {
+  text-align: right;
+}
+
+html[dir="rtl"] .auth-form {
+  text-align: right;
+}
+
+html[dir="rtl"] .auth-link {
+  text-align: right;
+}
+
+/* Add this to your globals.css file to ensure the sidebar toggle button is not affected by RTL styles */
+.rtl\:ml-auto.rtl\:mr-0 {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+
+/* RTL text input support */
+input[dir="rtl"],
+textarea[dir="rtl"] {
+  text-align: right;
+  direction: rtl;
+}
+
+input[dir="rtl"]::placeholder,
+textarea[dir="rtl"]::placeholder {
+  text-align: right;
+}
+
+/* Keep UI layout the same but support RTL text */
+.rtl-text-only {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Ensure message bubbles display Arabic text correctly */
+html[dir="rtl"] .message-bubble .whitespace-pre-wrap,
+html[dir="rtl"] .message-content {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Fix for emoji picker in RTL mode */
+html[dir="rtl"] .emoji-picker {
+  direction: ltr;
+}
+
+/* Keep the send button on the right in both LTR and RTL modes */
+html[dir="rtl"] .chat-input-container .flex-shrink-0 {
+  flex-direction: row;
 }

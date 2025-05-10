@@ -6,6 +6,7 @@ import { useSubscription } from "@/components/subscription-provider"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
 import { Check } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 
 export default function SubscriptionPage() {
   const { user, isLoading: authLoading } = useAuth()
@@ -23,6 +24,7 @@ export default function SubscriptionPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
+  const { t } = useLanguage()
 
   // Check for success or canceled parameters in the URL
   useEffect(() => {
@@ -31,18 +33,18 @@ export default function SubscriptionPage() {
 
     if (success === "true") {
       toast({
-        title: "Subscription successful!",
-        description: "Your subscription has been updated successfully.",
+        title: t("subscription.successTitle"),
+        description: t("subscription.successDescription"),
       })
       refreshSubscription()
     } else if (canceled === "true") {
       toast({
-        title: "Subscription canceled",
-        description: "You have canceled the subscription process.",
+        title: t("subscription.canceledTitle"),
+        description: t("subscription.canceledDescription"),
         variant: "destructive",
       })
     }
-  }, [searchParams, toast, refreshSubscription])
+  }, [searchParams, toast, refreshSubscription, t])
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -52,8 +54,8 @@ export default function SubscriptionPage() {
 
   const handleChangePlan = async () => {
     toast({
-      title: "You're all set!",
-      description: "You already have access to all features for free.",
+      title: t("subscription.allSetTitle"),
+      description: t("subscription.allSetDescription"),
     })
   }
 
@@ -64,7 +66,7 @@ export default function SubscriptionPage() {
       <div className="flex h-screen items-center justify-center bg-black">
         <div className="text-center">
           <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-white"></div>
-          <p className="mt-4 text-white">Loading...</p>
+          <p className="mt-4 text-white">{t("subscription.loading")}</p>
         </div>
       </div>
     )
@@ -83,11 +85,9 @@ export default function SubscriptionPage() {
             <div className="rounded-md border border-[#333333] bg-[#111] p-6 mb-12">
               {/* Heading and description */}
               <div className="mb-8">
-                <h1 className="mb-4 text-2xl font-bold">Subscription Plans</h1>
-                <p className="text-gray-400">
-                  Select the plan that best fits your needs. Upgrade anytime to unlock more features.
-                </p>
-                <p className="mt-2 text-gray-400">A new billing cycle will begin for your changes to take effect.</p>
+                <h1 className="mb-4 text-2xl font-bold">{t("subscription.title")}</h1>
+                <p className="text-gray-400">{t("subscription.selectPlan")}</p>
+                <p className="mt-2 text-gray-400">{t("subscription.newBillingCycle")}</p>
               </div>
 
               {/* Plan Selection */}
@@ -102,31 +102,31 @@ export default function SubscriptionPage() {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
-                        <div className="font-medium">Free Plan - $0/month</div>
+                        <div className="font-medium">{t("subscription.freePlan")}</div>
                       </div>
-                      <p className="mt-1 text-sm text-gray-400">Full access to all features</p>
+                      <p className="mt-1 text-sm text-gray-400">{t("subscription.fullAccess")}</p>
 
                       {/* Features List */}
                       <div className="mt-3 space-y-2">
                         <div className="flex items-start">
                           <Check className="mr-2 h-4 w-4 text-gray-400 mt-0.5" />
-                          <span className="text-sm text-gray-400">Unlimited messages</span>
+                          <span className="text-sm text-gray-400">{t("subscription.unlimitedMessages")}</span>
                         </div>
                         <div className="flex items-start">
                           <Check className="mr-2 h-4 w-4 text-gray-400 mt-0.5" />
-                          <span className="text-sm text-gray-400">Unlimited page notes</span>
+                          <span className="text-sm text-gray-400">{t("subscription.unlimitedPages")}</span>
                         </div>
                         <div className="flex items-start">
                           <Check className="mr-2 h-4 w-4 text-gray-400 mt-0.5" />
-                          <span className="text-sm text-gray-400">Access to all AI models</span>
+                          <span className="text-sm text-gray-400">{t("subscription.accessToAI")}</span>
                         </div>
                         <div className="flex items-start">
                           <Check className="mr-2 h-4 w-4 text-gray-400 mt-0.5" />
-                          <span className="text-sm text-gray-400">Priority support</span>
+                          <span className="text-sm text-gray-400">{t("subscription.prioritySupport")}</span>
                         </div>
                         <div className="flex items-start">
                           <Check className="mr-2 h-4 w-4 text-gray-400 mt-0.5" />
-                          <span className="text-sm text-gray-400">Early access to new features</span>
+                          <span className="text-sm text-gray-400">{t("subscription.earlyAccess")}</span>
                         </div>
                       </div>
                     </div>
@@ -135,37 +135,39 @@ export default function SubscriptionPage() {
               </div>
 
               <div className="mt-8 flex items-center justify-between">
-                <div className="text-sm text-gray-400">Enjoy all features completely free!</div>
+                <div className="text-sm text-gray-400">{t("subscription.enjoyFree")}</div>
               </div>
             </div>
 
             {/* Current Plan Details */}
             <div className="mt-12 rounded-md border border-[#333333] bg-[#111] p-6 mb-24">
-              <h2 className="mb-6 text-lg font-medium">Current Plan Details</h2>
+              <h2 className="mb-6 text-lg font-medium">{t("subscription.currentPlanDetails")}</h2>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">Plan</span>
-                  <span className="text-sm font-medium">{currentPlan?.name || "Free"}</span>
+                  <span className="text-sm text-gray-400">{t("subscription.plan")}</span>
+                  <span className="text-sm font-medium">{currentPlan?.name || t("subscription.free")}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">Status</span>
+                  <span className="text-sm text-gray-400">{t("subscription.status")}</span>
                   <span
                     className={`text-sm font-medium ${
                       subscriptionStatus === "active" ? "text-green-400" : "text-yellow-400"
                     }`}
                   >
-                    {subscriptionStatus === "active" ? "Active" : "Inactive"}
+                    {subscriptionStatus === "active" ? t("subscription.active") : t("subscription.inactive")}
                   </span>
                 </div>
                 {subscriptionEnd && (
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-400">Next billing date</span>
+                    <span className="text-sm text-gray-400">{t("subscription.nextBillingDate")}</span>
                     <span className="text-sm font-medium">{new Date(subscriptionEnd).toLocaleDateString()}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">Price</span>
-                  <span className="text-sm font-medium">${currentPlan?.price || "0"}/month</span>
+                  <span className="text-sm text-gray-400">{t("subscription.price")}</span>
+                  <span className="text-sm font-medium">
+                    ${currentPlan?.price || "0"}/{t("subscription.month")}
+                  </span>
                 </div>
               </div>
             </div>

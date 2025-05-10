@@ -6,6 +6,7 @@ import { useAuth } from "@/components/auth-provider"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Mail, Lock, User, ArrowRight, Check } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 
 export default function Register() {
   const [email, setEmail] = useState("")
@@ -18,6 +19,7 @@ export default function Register() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const { signUp, signInWithGoogle } = useAuth()
   const router = useRouter()
+  const { t } = useLanguage()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,7 +27,7 @@ export default function Register() {
     setIsLoading(true)
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match")
+      setError(t("register.passwordsDoNotMatch"))
       setIsLoading(false)
       return
     }
@@ -39,10 +41,10 @@ export default function Register() {
           router.push("/login")
         }, 3000)
       } else {
-        setError(error?.message || "Failed to sign up")
+        setError(error?.message || t("error.general"))
       }
     } catch (err) {
-      setError("An unexpected error occurred")
+      setError(t("error.general"))
       console.error(err)
     } finally {
       setIsLoading(false)
@@ -57,7 +59,7 @@ export default function Register() {
       await signInWithGoogle()
       // No need to handle success here as the user will be redirected to Google
     } catch (err) {
-      setError("Failed to initialize Google sign up")
+      setError(t("register.googleError"))
       console.error(err)
       setIsGoogleLoading(false)
     }
@@ -70,7 +72,7 @@ export default function Register() {
           <h1 className="text-4xl font-bold text-white">
             <span className="text-indigo-400">Allais</span>
           </h1>
-          <p className="mt-2 text-gray-400">Your gateway to AI-powered conversations</p>
+          <p className="mt-2 text-gray-400">{t("login.subtitle")}</p>
         </div>
 
         {success ? (
@@ -79,15 +81,13 @@ export default function Register() {
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-900/50">
                 <Check className="h-6 w-6 text-green-400" />
               </div>
-              <h3 className="mb-2 text-xl font-medium text-white">Registration successful!</h3>
-              <p className="mb-4 text-gray-400">
-                Your account has been created. You will be redirected to the login page shortly.
-              </p>
+              <h3 className="mb-2 text-xl font-medium text-white">{t("register.successTitle")}</h3>
+              <p className="mb-4 text-gray-400">{t("register.successMessage")}</p>
               <Link
                 href="/login"
                 className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
               >
-                Go to login
+                {t("register.goToLogin")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </div>
@@ -95,15 +95,15 @@ export default function Register() {
         ) : (
           <div className="rounded-lg border border-[#333] bg-[#1a1a1a] p-8 shadow-lg">
             <div className="mb-6 text-center">
-              <h2 className="text-2xl font-bold text-white">Create an account</h2>
-              <p className="mt-2 text-sm text-gray-400">Join thousands of users exploring AI possibilities</p>
+              <h2 className="text-2xl font-bold text-white">{t("register.createAccount")}</h2>
+              <p className="mt-2 text-sm text-gray-400">{t("register.joinUsers")}</p>
             </div>
 
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div className="space-y-4">
                 <div>
                   <label htmlFor="display-name" className="mb-2 block text-sm font-medium text-gray-300">
-                    Display Name
+                    {t("register.displayName")}
                   </label>
                   <div className="relative">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -115,7 +115,7 @@ export default function Register() {
                       type="text"
                       required
                       className="block w-full rounded-lg border border-[#333] bg-[#1a1a1a] p-2.5 pl-10 text-white placeholder:text-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      placeholder="John Doe"
+                      placeholder={t("placeholder.name")}
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
                     />
@@ -124,7 +124,7 @@ export default function Register() {
 
                 <div>
                   <label htmlFor="email" className="mb-2 block text-sm font-medium text-gray-300">
-                    Email address
+                    {t("profile.email")}
                   </label>
                   <div className="relative">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -137,7 +137,7 @@ export default function Register() {
                       autoComplete="email"
                       required
                       className="block w-full rounded-lg border border-[#333] bg-[#1a1a1a] p-2.5 pl-10 text-white placeholder:text-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      placeholder="name@example.com"
+                      placeholder={t("placeholder.email")}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
@@ -146,7 +146,7 @@ export default function Register() {
 
                 <div>
                   <label htmlFor="password" className="mb-2 block text-sm font-medium text-gray-300">
-                    Password
+                    {t("profile.password")}
                   </label>
                   <div className="relative">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -159,7 +159,7 @@ export default function Register() {
                       autoComplete="new-password"
                       required
                       className="block w-full rounded-lg border border-[#333] bg-[#1a1a1a] p-2.5 pl-10 text-white placeholder:text-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      placeholder="••••••••"
+                      placeholder={t("placeholder.password")}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
@@ -168,7 +168,7 @@ export default function Register() {
 
                 <div>
                   <label htmlFor="confirm-password" className="mb-2 block text-sm font-medium text-gray-300">
-                    Confirm Password
+                    {t("register.confirmPassword")}
                   </label>
                   <div className="relative">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -181,7 +181,7 @@ export default function Register() {
                       autoComplete="new-password"
                       required
                       className="block w-full rounded-lg border border-[#333] bg-[#1a1a1a] p-2.5 pl-10 text-white placeholder:text-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      placeholder="••••••••"
+                      placeholder={t("placeholder.password")}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                     />
@@ -216,13 +216,13 @@ export default function Register() {
                 </div>
                 <div className="ml-3 text-sm">
                   <label htmlFor="terms" className="text-gray-300">
-                    I agree to the{" "}
+                    {t("register.agreeToTerms")}{" "}
                     <a className="text-indigo-400 hover:underline" href="#">
-                      Terms of Service
+                      {t("register.termsOfService")}
                     </a>{" "}
-                    and{" "}
+                    {t("register.and")}{" "}
                     <a className="text-indigo-400 hover:underline" href="#">
-                      Privacy Policy
+                      {t("register.privacyPolicy")}
                     </a>
                   </label>
                 </div>
@@ -236,7 +236,7 @@ export default function Register() {
                 {isLoading ? (
                   <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
                 ) : null}
-                {isLoading ? "Creating account..." : "Create account"}
+                {isLoading ? t("register.creatingAccount") : t("register.createAccount")}
                 {!isLoading && (
                   <ArrowRight className="ml-2 h-4 w-4 opacity-70 transition-transform group-hover:translate-x-1" />
                 )}
@@ -247,7 +247,7 @@ export default function Register() {
                   <div className="w-full border-t border-gray-700"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="bg-[#1a1a1a] px-2 text-gray-400">Or continue with</span>
+                  <span className="bg-[#1a1a1a] px-2 text-gray-400">{t("login.orContinueWith")}</span>
                 </div>
               </div>
 
@@ -279,13 +279,17 @@ export default function Register() {
                     />
                   </svg>
                 )}
-                <span>{isGoogleLoading ? "Connecting..." : "Sign up with Google"}</span>
+                <span>{isGoogleLoading ? t("login.connecting") : t("register.signUpWithGoogle")}</span>
               </button>
 
               <div className="text-center text-sm">
-                <span className="text-gray-400">Already have an account?</span>{" "}
-                <Link href="/login" className="font-medium text-indigo-400 hover:text-indigo-300">
-                  Sign in instead
+                <span className="text-gray-400 bg-transparent">{t("register.alreadyHaveAccount")}</span>{" "}
+                <Link
+                  href="/login"
+                  className="font-medium text-indigo-400 hover:text-indigo-300"
+                  style={{ background: "transparent" }}
+                >
+                  {t("register.signInInstead")}
                 </Link>
               </div>
             </form>
@@ -293,7 +297,7 @@ export default function Register() {
         )}
 
         <div className="mt-8 text-center text-sm text-gray-400">
-          &copy; {new Date().getFullYear()} Allais. All rights reserved.
+          &copy; {new Date().getFullYear()} Allais. {t("login.allRightsReserved")}
         </div>
       </div>
     </div>

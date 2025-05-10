@@ -11,6 +11,8 @@ import {
   ChevronDown,
   Trash2,
   HelpCircle,
+  Globe,
+  User,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/components/auth-provider"
@@ -32,11 +34,15 @@ import { apiClient } from "@/utils/api-client"
 import { useToast } from "@/components/ui/use-toast"
 import { SupportModal } from "@/components/support-modal"
 import { UserAvatar } from "./user-avatar"
+import { X } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 
 interface SidebarProps {
   isOpen: boolean
   onConversationSelect?: (conversationId: string | null, title: string) => void
   currentConversationId?: string | null
+  onCloseMobileSidebar?: () => void
+  hideSidebarToggle?: boolean
 }
 
 type Conversation = {
@@ -73,6 +79,7 @@ interface NavItemProps {
 
 function NavItem({ icon, label, isCollapsed, path, onClick }: NavItemProps) {
   const router = useRouter()
+  const { t, dir } = useLanguage()
 
   const handleClick = () => {
     if (onClick) {
@@ -89,18 +96,49 @@ function NavItem({ icon, label, isCollapsed, path, onClick }: NavItemProps) {
     }
   }
 
+  // Get the translation key based on the label
+  const translationKey = `nav.${label.toLowerCase()}`
+
   return (
     <button
       className={`flex ${isCollapsed ? "w-10 justify-center" : "w-full justify-start"} items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors duration-200 text-gray-400 hover:bg-[#1a1a1a] hover:text-white`}
       onClick={handleClick}
     >
       {icon}
-      {!isCollapsed && <span>{label}</span>}
+      {!isCollapsed && <span>{t(translationKey)}</span>}
     </button>
   )
 }
 
-export function Sidebar({ isOpen = true, onConversationSelect, currentConversationId }: SidebarProps) {
+// Custom hook to detect if we're on mobile
+function useMobile() {
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768) // 768px is the standard md breakpoint in Tailwind
+    }
+
+    // Check on mount
+    checkIfMobile()
+
+    // Add event listener for window resize
+    window.addEventListener("resize", checkIfMobile)
+
+    // Clean up
+    return () => window.removeEventListener("resize", checkIfMobile)
+  }, [])
+
+  return isMobile
+}
+
+export function Sidebar({
+  isOpen = true,
+  onConversationSelect,
+  currentConversationId,
+  onCloseMobileSidebar,
+  hideSidebarToggle = false,
+}: SidebarProps) {
   const { user, signOut } = useAuth()
   const [recentChats, setRecentChats] = useState<Conversation[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -114,6 +152,9 @@ export function Sidebar({ isOpen = true, onConversationSelect, currentConversati
   const [userEmail, setUserEmail] = useState<string>("")
   const { currentPlan } = useSubscription()
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false)
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
+  const isMobile = useMobile()
+  const { language, setLanguage, t, dir } = useLanguage()
 
   // Initialize collapsed state from localStorage
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -149,7 +190,13 @@ export function Sidebar({ isOpen = true, onConversationSelect, currentConversati
   }, [user])
 
   const toggleSidebar = () => {
-    setIsCollapsed(!isCollapsed)
+    // If on mobile and onCloseMobileSidebar is provided, close the sidebar
+    if (isMobile && onCloseMobileSidebar) {
+      onCloseMobileSidebar()
+    } else {
+      // On desktop, toggle the collapsed state
+      setIsCollapsed(!isCollapsed)
+    }
   }
 
   // Function to fetch recent conversations
@@ -251,11 +298,23 @@ export function Sidebar({ isOpen = true, onConversationSelect, currentConversati
     }
   }, [user, supabase, fetchRecentConversations])
 
-  const handleConversationClick = (conversationId: string, title: string) => {
-    // Always allow clicking on conversations regardless of plan
-    if (onConversationSelect) {
-      console.log("Selecting conversation:", conversationId, title)
-      onConversationSelect(conversationId, title)
+  // Update the handleConversationClick function in the sidebar component
+  const handleConversationClick = (conversationId: string) => {
+    // Only navigate to conversations if user is logged in
+    if (user) {
+      // Close mobile sidebar if function is provided
+      if (onCloseMobileSidebar) {
+        onCloseMobileSidebar()
+      }
+
+      // Use the router to navigate to the conversation with replace to force a refresh
+      router.push(`/dashboard?conversation=${conversationId}`, { scroll: false })
+    } else {
+      toast({
+        title: t("chat.loginRequired"),
+        description: t("chat.loginRequiredDesc"),
+        variant: "destructive",
+      })
     }
   }
 
@@ -265,8 +324,23 @@ export function Sidebar({ isOpen = true, onConversationSelect, currentConversati
       onConversationSelect(null, "New Conversation")
     }
 
+    // Close mobile sidebar if function is provided
+    if (onCloseMobileSidebar) {
+      onCloseMobileSidebar()
+    }
+
     // Use direct window.location navigation to ensure we go to /dashboard without any query params
     window.location.href = "/dashboard"
+  }
+
+  const handleNavItemClick = (path: string) => {
+    // Close mobile sidebar if function is provided
+    if (onCloseMobileSidebar) {
+      onCloseMobileSidebar()
+    }
+
+    // Navigate to the path
+    router.push(path)
   }
 
   const deleteConversation = async (conversationId: string) => {
@@ -280,7 +354,7 @@ export function Sidebar({ isOpen = true, onConversationSelect, currentConversati
         console.error("Failed to delete conversation")
         toast({
           title: "Error",
-          description: "Failed to delete conversation. Please try again.",
+          description: t("chat.deleteError"),
           variant: "destructive",
         })
         return
@@ -290,8 +364,8 @@ export function Sidebar({ isOpen = true, onConversationSelect, currentConversati
       setRecentChats(recentChats.filter((chat) => chat.id !== conversationId))
 
       toast({
-        title: "Conversation deleted",
-        description: "The conversation has been successfully deleted.",
+        title: t("chat.deleted"),
+        description: t("chat.deletedDesc"),
       })
 
       // If the deleted conversation is the current one, navigate to dashboard
@@ -303,10 +377,22 @@ export function Sidebar({ isOpen = true, onConversationSelect, currentConversati
       console.error("Unexpected error deleting conversation:", error)
       toast({
         title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        description: t("chat.deleteError"),
         variant: "destructive",
       })
     }
+  }
+
+  const changeLanguage = (newLanguage: "en" | "ar") => {
+    setLanguage(newLanguage)
+
+    // Show toast in the new language
+    const message = newLanguage === "en" ? "Language has been changed to English" : "تم تغيير اللغة إلى العربية"
+
+    toast({
+      title: newLanguage === "en" ? "Language Changed" : "تم تغيير اللغة",
+      description: message,
+    })
   }
 
   if (!isOpen) return null
@@ -315,127 +401,238 @@ export function Sidebar({ isOpen = true, onConversationSelect, currentConversati
 
   return (
     <div
-      className={`${
-        isCollapsed ? "w-[60px]" : "w-[270px]"
-      } flex-shrink-0 border-r border-[#333] bg-[#0f0f10] transition-all duration-300 h-full flex flex-col relative overflow-hidden`}
+      className={`${isCollapsed ? "w-[60px]" : isMobile ? "w-full" : "w-[270px]"} flex-shrink-0 ${
+        dir === "rtl" ? "border-l border-[#333333]" : "border-r border-[#333333]"
+      } bg-[#141414] transition-all duration-300 h-full flex flex-col relative overflow-hidden`}
+      dir={dir}
     >
+      {isMobileSidebarOpen && (
+        <div className="mobile-sidebar-header md:hidden">
+          {/* Mobile sidebar header with logo and close button - adjusted for RTL */}
+          <div className={`flex items-center justify-between w-full ${dir === "rtl" ? "flex-row" : ""}`}>
+            <h2 className="text-xl font-semibold">Allais</h2>
+            <button
+              onClick={() => setIsMobileSidebarOpen(false)}
+              className="mobile-sidebar-close"
+              aria-label="Close sidebar"
+            >
+              <X size={24} />
+            </button>
+          </div>
+        </div>
+      )}
       {/* User profile at bottom - fixed */}
-      <div className="flex-shrink-0 mt-auto border-t border-[#333] absolute bottom-0 left-0 right-0 bg-[#0f0f10] z-10">
-        {!isCollapsed ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger className="w-full focus:outline-none">
-              <div className="flex w-full items-center justify-between px-3 py-2 hover:bg-[#1a1a1a] transition-colors">
-                <div className="flex items-center gap-2">
-                  <UserAvatar />
-                  <div className="flex flex-col items-start">
-                    <span className="text-sm text-white">{username}</span>
-                    <span className="text-xs text-emerald-400">
-                      {user ? <>{currentPlan?.name || "Free"}</> : "Free"}
-                    </span>
+      <div className="flex-shrink-0 mt-auto border-t border-[#333333] absolute bottom-0 left-0 right-0 bg-[#141414] z-10">
+        {user ? (
+          !isCollapsed ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="w-full focus:outline-none">
+                <div className="flex w-full items-center justify-between px-3 py-2 hover:bg-[#1a1a1a] transition-colors">
+                  <div className="flex items-center gap-2">
+                    <UserAvatar />
+                    <div className="flex flex-col items-start">
+                      <span className="text-sm text-white">{username}</span>
+                      <span className="text-xs text-emerald-400">
+                        {user ? <>{currentPlan?.name || t("user.free")}</> : t("user.free")}
+                      </span>
+                    </div>
+                  </div>
+                  <Settings className="h-4 w-4 text-gray-400" />
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-64 bg-black border-[#333333] text-white" align="end">
+                <div className="px-4 py-2">
+                  <p className="text-sm text-gray-400">{userEmail}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <UserAvatar />
+                    <div className="flex flex-col items-start">
+                      <span className="text-sm text-white">{username}</span>
+                      <span className="text-xs text-emerald-400">{currentPlan?.name || t("user.free")}</span>
+                    </div>
                   </div>
                 </div>
-                <Settings className="h-4 w-4 text-gray-400" />
-              </div>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-64 bg-black border-[#333] text-white" align="end">
-              <div className="px-4 py-2">
-                <p className="text-sm text-gray-400">{userEmail}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <UserAvatar />
-                  <div className="flex flex-col items-start">
-                    <span className="text-sm text-white">{username}</span>
-                    <span className="text-xs text-emerald-400">{currentPlan?.name || "Free"}</span>
+
+                <DropdownMenuSeparator className="bg-[#333333]" />
+
+                <DropdownMenuItem
+                  className="hover:bg-[#252525] cursor-pointer"
+                  onClick={() => {
+                    router.push("/settings")
+                    if (onCloseMobileSidebar) onCloseMobileSidebar()
+                  }}
+                >
+                  <Settings className={`h-4 w-4 ${dir === "rtl" ? "ml-2" : "mr-2"}`} />
+                  <span>{t("nav.settings")}</span>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem className="hover:bg-[#252525] cursor-pointer" onClick={signOut}>
+                  <LogOut className={`h-4 w-4 ${dir === "rtl" ? "ml-2" : "mr-2"}`} />
+                  <span>{t("action.signOut")}</span>
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator className="bg-[#333333]" />
+
+                <DropdownMenuLabel className="text-xs text-gray-400 font-normal">
+                  {t("user.preferences")}
+                </DropdownMenuLabel>
+
+                <div className="px-4 py-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">{t("user.language")}</span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="flex items-center gap-1 text-sm bg-[#252525] px-2 py-1 rounded-md">
+                        {language === "en" ? t("language.english") : t("language.arabic")}
+                        <ChevronDown className="h-3 w-3" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="bg-black border-[#333333] text-white">
+                        <DropdownMenuItem
+                          className="hover:bg-[#252525] cursor-pointer"
+                          onClick={() => changeLanguage("en")}
+                        >
+                          {t("language.english")}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="hover:bg-[#252525] cursor-pointer"
+                          onClick={() => changeLanguage("ar")}
+                        >
+                          {t("language.arabic")}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
-              </div>
-
-              <DropdownMenuSeparator className="bg-[#333]" />
-
-              <DropdownMenuItem className="hover:bg-[#252525] cursor-pointer" onClick={() => router.push("/settings")}>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem className="hover:bg-[#252525] cursor-pointer" onClick={signOut}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Sign Out</span>
-              </DropdownMenuItem>
-
-              <DropdownMenuSeparator className="bg-[#333]" />
-
-              <DropdownMenuLabel className="text-xs text-gray-400 font-normal">Preferences</DropdownMenuLabel>
-
-              <div className="px-4 py-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Language</span>
-                  <button className="flex items-center gap-1 text-sm bg-[#252525] px-2 py-1 rounded-md">
-                    English
-                    <ChevronDown className="h-3 w-3" />
-                  </button>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="focus:outline-none w-full">
+                <div className="flex flex-col items-center p-2">
+                  <UserAvatar />
                 </div>
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-64 bg-black border-[#333333] text-white" align="end">
+                <div className="px-4 py-2">
+                  <p className="text-sm text-gray-400">{userEmail}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <UserAvatar />
+                    <div className="flex flex-col items-start">
+                      <span className="text-sm text-white">{username}</span>
+                      <span className="text-xs text-emerald-400">{currentPlan?.name || t("user.free")}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <DropdownMenuSeparator className="bg-[#333333]" />
+
+                <DropdownMenuItem
+                  className="hover:bg-[#252525] cursor-pointer"
+                  onClick={() => {
+                    router.push("/settings")
+                    if (onCloseMobileSidebar) onCloseMobileSidebar()
+                  }}
+                >
+                  <Settings className={`h-4 w-4 ${dir === "rtl" ? "ml-2" : "mr-2"}`} />
+                  <span>{t("nav.settings")}</span>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem className="hover:bg-[#252525] cursor-pointer" onClick={signOut}>
+                  <LogOut className={`h-4 w-4 ${dir === "rtl" ? "ml-2" : "mr-2"}`} />
+                  <span>{t("action.signOut")}</span>
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator className="bg-[#333333]" />
+
+                <DropdownMenuLabel className="text-xs text-gray-400 font-normal">
+                  {t("user.preferences")}
+                </DropdownMenuLabel>
+
+                <div className="px-4 py-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">{t("user.language")}</span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="flex items-center gap-1 text-sm bg-[#252525] px-2 py-1 rounded-md">
+                        {language === "en" ? t("language.english") : t("language.arabic")}
+                        <ChevronDown className="h-3 w-3" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="bg-black border-[#333333] text-white">
+                        <DropdownMenuItem
+                          className="hover:bg-[#252525] cursor-pointer"
+                          onClick={() => changeLanguage("en")}
+                        >
+                          {t("language.english")}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="hover:bg-[#252525] cursor-pointer"
+                          onClick={() => changeLanguage("ar")}
+                        >
+                          {t("language.arabic")}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        ) : // Login & Register button and language dropdown for non-logged in users
+        isCollapsed ? (
+          <div className="flex flex-col items-center p-2">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 border-[#333333] bg-[#141415] hover:bg-[#1a1a1a] text-white"
+              onClick={() => router.push("/login")}
+            >
+              <User className="h-4 w-4" />
+            </Button>
+          </div>
         ) : (
-          <DropdownMenu>
-            <DropdownMenuTrigger className="focus:outline-none w-full">
-              <div className="flex flex-col items-center p-2">
-                <UserAvatar />
-              </div>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-64 bg-black border-[#333] text-white" align="end">
-              <div className="px-4 py-2">
-                <p className="text-sm text-gray-400">{userEmail}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <UserAvatar />
-                  <div className="flex flex-col items-start">
-                    <span className="text-sm text-white">{username}</span>
-                    <span className="text-xs text-emerald-400">{currentPlan?.name || "Free"}</span>
-                  </div>
-                </div>
-              </div>
+          <div className={`flex items-center ${dir === "rtl" ? "flex-row-reverse" : ""} justify-between px-3 py-2`}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-[#333333] bg-[#141415] hover:bg-[#1a1a1a] text-white"
+              onClick={() => router.push("/login")}
+            >
+              <User className={`h-4 w-4 ${dir === "rtl" ? "ml-2" : "mr-2"}`} />
+              {t("action.login")}
+            </Button>
 
-              <DropdownMenuSeparator className="bg-[#333]" />
-
-              <DropdownMenuItem className="hover:bg-[#252525] cursor-pointer" onClick={() => router.push("/settings")}>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem className="hover:bg-[#252525] cursor-pointer" onClick={signOut}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Sign Out</span>
-              </DropdownMenuItem>
-
-              <DropdownMenuSeparator className="bg-[#333]" />
-
-              <DropdownMenuLabel className="text-xs text-gray-400 font-normal">Preferences</DropdownMenuLabel>
-
-              <div className="px-4 py-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Language</span>
-                  <button className="flex items-center gap-1 text-sm bg-[#252525] px-2 py-1 rounded-md">
-                    English
-                    <ChevronDown className="h-3 w-3" />
-                  </button>
-                </div>
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-1 text-sm bg-[#141415] px-2 py-1 rounded-md border border-[#333333]">
+                <Globe className={`h-4 w-4 ${dir === "rtl" ? "ml-1" : "mr-1"}`} />
+                {language === "en" ? "EN" : "AR"}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-black border-[#333333] text-white">
+                <DropdownMenuItem className="hover:bg-[#252525] cursor-pointer" onClick={() => changeLanguage("en")}>
+                  {language === "en" ? "English" : "الإنجليزية"}
+                </DropdownMenuItem>
+                <DropdownMenuItem className="hover:bg-[#252525] cursor-pointer" onClick={() => changeLanguage("ar")}>
+                  {language === "en" ? "Arabic" : "العربية"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         )}
       </div>
 
       {/* Main content area - everything scrolls */}
-      <div className="absolute top-0 left-0 right-0 bottom-[48px] overflow-y-auto overflow-x-hidden tiny-scrollbar">
-        <div className="flex items-center p-4">
+      <div
+        className="absolute top-0 left-0 right-0 bottom-[48px] overflow-y-auto overflow-x-hidden tiny-scrollbar border-[#333333]"
+        style={{ width: "100%" }}
+      >
+        {/* Header with logo and toggle button - COMPLETELY REWRITTEN */}
+        <div className="flex items-center justify-between p-4">
           {!isCollapsed && (
             <h1 className="text-xl font-bold truncate">
               <span className="text-white">Allais</span>
             </h1>
           )}
+          {/* Sidebar toggle button - positioned correctly based on language direction */}
           <button
             onClick={toggleSidebar}
-            className={`${isCollapsed ? "mx-auto" : "ml-auto"} rounded-md p-1 transition-colors duration-200 hover:bg-[#1a1a1a] text-gray-400 flex-shrink-0`}
+            className="rounded-md p-1 transition-colors duration-200 hover:bg-[#1a1a1a] text-gray-400 flex-shrink-0"
+            style={{ marginRight: dir === "rtl" ? "auto" : "", marginLeft: dir === "ltr" ? "auto" : "" }}
           >
             <svg width="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
@@ -449,13 +646,14 @@ export function Sidebar({ isOpen = true, onConversationSelect, currentConversati
         </div>
 
         <div className="px-3 py-2">
+          {/* New Chat button - always LTR layout */}
           <Button
             variant="outline"
-            className={`flex ${isCollapsed ? "w-10 justify-center" : "w-full justify-start"} items-center gap-2 border-[#ffffff1f] bg-[#141415] text-white transition-all duration-200 hover:border-[#ffffff1f] hover:bg-[#1a1a1a]`}
+            className={`flex ${isCollapsed ? "w-10 justify-center" : "w-full new-chat-button"} items-center gap-2 border-[#ffffff1f] bg-[#141415] text-white transition-all duration-200 hover:border-[#ffffff1f] hover:bg-[#1a1a1a] ${isCollapsed ? "justify-center" : "justify-center relative"}`}
             onClick={handleNewChat}
           >
             <Plus className="h-4 w-4 flex-shrink-0" />
-            {!isCollapsed && <span className="truncate">New Chat</span>}
+            {!isCollapsed && <span className="truncate">{t("action.newChat")}</span>}
           </Button>
         </div>
 
@@ -465,35 +663,60 @@ export function Sidebar({ isOpen = true, onConversationSelect, currentConversati
             label="Chat"
             isCollapsed={isCollapsed}
             path="/dashboard"
+            onClick={() => {
+              if (onCloseMobileSidebar) onCloseMobileSidebar()
+              router.push("/dashboard")
+            }}
           />
-          <NavItem icon={<FileText className="h-4 w-4" />} label="Pages" isCollapsed={isCollapsed} path="/pages" />
+          <NavItem
+            icon={<FileText className="h-4 w-4" />}
+            label="Pages"
+            isCollapsed={isCollapsed}
+            path="/pages"
+            onClick={() => {
+              if (onCloseMobileSidebar) onCloseMobileSidebar()
+              router.push("/pages")
+            }}
+          />
           <NavItem
             icon={<Sparkles className="h-4 w-4" />}
             label="Subscription"
             isCollapsed={isCollapsed}
             path="/subscription"
+            onClick={() => {
+              if (onCloseMobileSidebar) onCloseMobileSidebar()
+              router.push("/subscription")
+            }}
           />
           <NavItem
             icon={<HelpCircle className="h-4 w-4" />}
             label="Support"
             isCollapsed={isCollapsed}
             path="#"
-            onClick={() => setIsSupportModalOpen(true)}
+            onClick={() => {
+              if (onCloseMobileSidebar) onCloseMobileSidebar()
+              setIsSupportModalOpen(true)
+            }}
           />
-          <SettingsLink isCollapsed={isCollapsed} />
+          <SettingsLink isCollapsed={isCollapsed} onCloseMobileSidebar={onCloseMobileSidebar} />
         </nav>
 
-        {/* Pages Sidebar */}
-        <div className={isCollapsed ? "hidden" : "block"}>
-          <PagesSidebar isCollapsed={isCollapsed} />
-        </div>
+        {/* Pages Sidebar - only show when logged in */}
+        {!isCollapsed && user && (
+          <div className={isCollapsed ? "hidden" : "block"}>
+            <PagesSidebar isCollapsed={isCollapsed} onCloseMobileSidebar={onCloseMobileSidebar} />
+          </div>
+        )}
 
-        {/* Recent Chats */}
+        {/* Recent Chats - show for all users */}
         {!isCollapsed && (
           <>
             <div className="mt-4 px-4 py-2">
+              {/* Always use LTR layout for the header */}
               <div className="flex items-center justify-between">
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400">RECENT CHATS</h2>
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  {t("chat.recentChats")}
+                </h2>
                 <button
                   className="rounded p-1 transition-colors duration-200 hover:bg-[#1a1a1a]"
                   onClick={handleNewChat}
@@ -504,51 +727,67 @@ export function Sidebar({ isOpen = true, onConversationSelect, currentConversati
             </div>
 
             <div className="px-3 py-2 space-y-1">
-              {isLoading ? (
-                <div className="flex items-center justify-center py-4">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-500 border-t-transparent"></div>
-                  <span className="ml-2 text-xs text-gray-500">Loading chats...</span>
-                </div>
-              ) : recentChats.length > 0 ? (
-                recentChats.map((chat) => (
-                  <div key={chat.id} className="flex items-center group">
-                    <div
-                      className={`flex-1 flex items-center rounded-md px-2 py-1.5 text-sm ${
-                        currentConversationId === chat.id
-                          ? "bg-[#1a1a1a] text-white"
-                          : "text-gray-400 hover:bg-[#1a1a1a] hover:text-white"
-                      } cursor-pointer`}
-                      onClick={() => handleConversationClick(chat.id, chat.title)}
-                    >
-                      <MessageSquare className="h-3.5 w-3.5 mr-2 flex-shrink-0" />
-                      <span className="truncate">{chat.title || "Untitled Chat"}</span>
-                    </div>
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          if (confirm("Are you sure you want to delete this conversation?")) {
-                            deleteConversation(chat.id)
-                          }
-                        }}
-                        className="rounded-md p-1 text-gray-500 hover:bg-[#333] hover:text-red-400"
-                        title="Delete conversation"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
+              {user ? (
+                // For logged-in users, show their actual chats
+                isLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-500 border-t-transparent"></div>
+                    <span className="ml-2 text-xs text-gray-500">{t("chat.loadingChats")}</span>
                   </div>
-                ))
+                ) : recentChats.length > 0 ? (
+                  recentChats.map((chat) => (
+                    <div key={chat.id} className="flex items-center group">
+                      <div
+                        className={`flex-1 flex items-center rounded-md px-2 py-1.5 text-sm ${
+                          currentConversationId === chat.id
+                            ? "bg-[#1a1a1a] text-white"
+                            : "text-gray-400 hover:bg-[#1a1a1a] hover:text-white"
+                        } cursor-pointer`}
+                        onClick={() => handleConversationClick(chat.id)}
+                      >
+                        <MessageSquare className="h-3.5 w-3.5 flex-shrink-0 mr-2" />
+                        <span className="truncate">{chat.title || t("chat.untitledChat")}</span>
+                      </div>
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (confirm(t("chat.deleteConfirm"))) {
+                              deleteConversation(chat.id)
+                            }
+                          }}
+                          className="rounded-md p-1 text-gray-500 hover:bg-[#333] hover:text-red-400"
+                          title="Delete conversation"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-gray-500">{t("chat.noChats")}</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2 text-xs border-[#333] bg-transparent hover:bg-[#1a1a1a]"
+                      onClick={handleNewChat}
+                    >
+                      {t("action.startChat")}
+                    </Button>
+                  </div>
+                )
               ) : (
+                // For non-logged-in users, show "No recent chats" with "Start a new chat" button
                 <div className="text-center py-4">
-                  <p className="text-sm text-gray-500">No recent chats</p>
+                  <p className="text-sm text-gray-500">{t("chat.noChats")}</p>
                   <Button
                     variant="outline"
                     size="sm"
                     className="mt-2 text-xs border-[#333] bg-transparent hover:bg-[#1a1a1a]"
                     onClick={handleNewChat}
                   >
-                    Start a new chat
+                    {t("action.startChat")}
                   </Button>
                 </div>
               )}
@@ -569,3 +808,6 @@ export function Sidebar({ isOpen = true, onConversationSelect, currentConversati
     </div>
   )
 }
+
+// Add a default export for the Sidebar component
+export default Sidebar

@@ -6,6 +6,7 @@ import { useAuth } from "@/components/auth-provider"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Mail, Lock, ArrowRight } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 
 export default function Login() {
   const [email, setEmail] = useState("")
@@ -15,6 +16,7 @@ export default function Login() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const { signIn, signInWithGoogle } = useAuth()
   const router = useRouter()
+  const { t } = useLanguage()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,10 +29,10 @@ export default function Login() {
       if (success) {
         router.push("/dashboard")
       } else {
-        setError(error?.message || "Failed to sign in")
+        setError(error?.message || t("error.general"))
       }
     } catch (err) {
-      setError("An unexpected error occurred")
+      setError(t("error.general"))
       console.error(err)
     } finally {
       setIsLoading(false)
@@ -45,7 +47,7 @@ export default function Login() {
       await signInWithGoogle()
       // No need to handle success here as the user will be redirected to Google
     } catch (err) {
-      setError("Failed to initialize Google sign in")
+      setError(t("login.googleError"))
       console.error(err)
       setIsGoogleLoading(false)
     }
@@ -58,20 +60,20 @@ export default function Login() {
           <h1 className="text-4xl font-bold text-white">
             <span className="text-indigo-400">Allais</span>
           </h1>
-          <p className="mt-2 text-gray-400">Your gateway to AI-powered conversations</p>
+          <p className="mt-2 text-gray-400">{t("login.subtitle")}</p>
         </div>
 
         <div className="rounded-lg border border-[#333] bg-[#1a1a1a] p-8 shadow-lg">
           <div className="mb-6 text-center">
-            <h2 className="text-2xl font-bold text-white">Welcome back</h2>
-            <p className="mt-2 text-sm text-gray-400">Sign in to continue to your dashboard</p>
+            <h2 className="text-2xl font-bold text-white">{t("login.welcomeBack")}</h2>
+            <p className="mt-2 text-sm text-gray-400">{t("login.signInToContinue")}</p>
           </div>
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div>
                 <label htmlFor="email" className="mb-2 block text-sm font-medium text-gray-300">
-                  Email address
+                  {t("profile.email")}
                 </label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -84,7 +86,7 @@ export default function Login() {
                     autoComplete="email"
                     required
                     className="block w-full rounded-lg border border-[#333] bg-[#1a1a1a] p-2.5 pl-10 text-white placeholder:text-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                    placeholder="name@example.com"
+                    placeholder={t("placeholder.email")}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
@@ -93,7 +95,7 @@ export default function Login() {
 
               <div>
                 <label htmlFor="password" className="mb-2 block text-sm font-medium text-gray-300">
-                  Password
+                  {t("profile.password")}
                 </label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -106,7 +108,7 @@ export default function Login() {
                     autoComplete="current-password"
                     required
                     className="block w-full rounded-lg border border-[#333] bg-[#1a1a1a] p-2.5 pl-10 text-white placeholder:text-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                    placeholder="••••••••"
+                    placeholder={t("placeholder.password")}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
@@ -138,12 +140,12 @@ export default function Login() {
                   className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-indigo-600 focus:ring-indigo-500"
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-300">
-                  Remember me
+                  {t("login.rememberMe")}
                 </label>
               </div>
               <div className="text-sm">
                 <a href="#" className="text-indigo-400 hover:text-indigo-300">
-                  Forgot password?
+                  {t("login.forgotPassword")}
                 </a>
               </div>
             </div>
@@ -156,7 +158,7 @@ export default function Login() {
               {isLoading ? (
                 <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
               ) : null}
-              {isLoading ? "Signing in..." : "Sign in"}
+              {isLoading ? t("login.signingIn") : t("action.login")}
               {!isLoading && (
                 <ArrowRight className="ml-2 h-4 w-4 opacity-70 transition-transform group-hover:translate-x-1" />
               )}
@@ -167,7 +169,7 @@ export default function Login() {
                 <div className="w-full border-t border-gray-700"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="bg-[#1a1a1a] px-2 text-gray-400">Or continue with</span>
+                <span className="bg-[#1a1a1a] px-2 text-gray-400">{t("login.orContinueWith")}</span>
               </div>
             </div>
 
@@ -180,39 +182,41 @@ export default function Login() {
               {isGoogleLoading ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
               ) : (
-                <svg className="h-5 w-5" viewBox="0 0 24 24">
-                  <path
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    fill="#4285F4"
-                  />
-                  <path
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    fill="#34A853"
-                  />
-                  <path
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                    fill="#FBBC05"
-                  />
-                  <path
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                    fill="#EA4335"
-                  />
-                </svg>
+                <div className="flex items-center justify-center h-5 w-5 text-white">
+                  <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                      fill="#4285F4"
+                    />
+                    <path
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      fill="#34A853"
+                    />
+                    <path
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                      fill="#FBBC05"
+                    />
+                    <path
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                      fill="#EA4335"
+                    />
+                  </svg>
+                </div>
               )}
-              <span>{isGoogleLoading ? "Connecting..." : "Sign in with Google"}</span>
+              <span>{isGoogleLoading ? t("login.connecting") : t("login.signInWithGoogle")}</span>
             </button>
 
             <div className="text-center text-sm">
-              <span className="text-gray-400">Don't have an account?</span>{" "}
+              <span className="text-gray-400">{t("login.noAccount")}</span>{" "}
               <Link href="/register" className="font-medium text-indigo-400 hover:text-indigo-300">
-                Sign up now
+                {t("login.signUpNow")}
               </Link>
             </div>
           </form>
         </div>
 
         <div className="mt-8 text-center text-sm text-gray-400">
-          &copy; {new Date().getFullYear()} Allais. All rights reserved.
+          &copy; {new Date().getFullYear()} Allais. {t("login.allRightsReserved")}
         </div>
       </div>
     </div>

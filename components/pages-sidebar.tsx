@@ -2,94 +2,176 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
-import { useRouter, usePathname } from "next/navigation"
-import { Plus, FileText, Trash2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { usePages } from "@/components/pages-provider"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
+import { useState, useEffect, useCallback } from "react"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { useAuth } from "@/components/auth-provider"
-import { useToast } from "@/components/ui/use-toast"
+import { useRouter } from "next/navigation"
+import { FileText, Plus, Trash2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { useLanguage } from "@/contexts/language-context"
+import { toast } from "@/components/ui/use-toast"
+import { usePages } from "@/components/pages-provider"
 
-export function PagesSidebar({ isCollapsed = false }) {
-  const { rootPages, isLoading, createPage, deletePage } = usePages()
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [newPageTitle, setNewPageTitle] = useState("")
-  const router = useRouter()
-  const pathname = usePathname()
-  const [currentPath, setCurrentPath] = useState(pathname)
-  const { toast } = useToast()
+interface PagesSidebarProps {
+  isCollapsed: boolean
+  onCloseMobileSidebar?: () => void
+}
+
+type Page = {
+  id: string
+  title: string
+  created_at: string
+  updated_at: string
+}
+
+export function PagesSidebar({ isCollapsed, onCloseMobileSidebar }: PagesSidebarProps) {
+  const [pages, setPages] = useState<Page[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [deletingPageId, setDeletingPageId] = useState<string | null>(null)
+  const supabase = createClientComponentClient()
   const { user } = useAuth()
+  const router = useRouter()
+  const { t, dir } = useLanguage()
+  const pagesContext = usePages()
 
-  // Update current path when pathname changes
-  useEffect(() => {
-    setCurrentPath(pathname)
-  }, [pathname])
+  const fetchPages = useCallback(async () => {
+    if (!user) return
 
-  const handleCreatePage = async () => {
-    if (!newPageTitle.trim()) return
+    setIsLoading(true)
 
-    const newPage = await createPage(newPageTitle)
-    if (newPage) {
-      setNewPageTitle("")
-      setIsCreateDialogOpen(false)
+    try {
+      const { data, error } = await supabase
+        .from("pages")
+        .select("id, title, created_at, updated_at")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false })
+        .limit(10)
 
-      // Use replace instead of push to avoid history stacking issues
-      router.replace(`/pages/${newPage.id}`)
+      if (error) {
+        console.error("Error fetching pages:", error)
+        setPages([])
+        setIsLoading(false)
+        return
+      }
+
+      setPages(data || [])
+    } catch (error) {
+      console.error("Unexpected error fetching pages:", error)
+      setPages([])
+    } finally {
+      setIsLoading(false)
     }
-  }
+  }, [user, supabase])
 
-  const handlePageClick = (pageId: string, e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+  useEffect(() => {
+    if (user) {
+      fetchPages()
+    }
+  }, [fetchPages, user])
 
-    // Log the navigation attempt
-    console.log("PagesSidebar: Navigating to page:", pageId, "from current path:", pathname)
+  // Set up a subscription to refresh pages when they change
+  useEffect(() => {
+    if (!user) return
 
-    // Use router.push instead of replace to maintain history
+    const subscription = supabase
+      .channel(`pages_changes_${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "pages",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          fetchPages()
+        },
+      )
+      .subscribe()
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [user, supabase, fetchPages])
+
+  const handlePageClick = (pageId: string) => {
+    if (onCloseMobileSidebar) {
+      onCloseMobileSidebar()
+    }
     router.push(`/pages/${pageId}`)
   }
 
-  const handleDeletePage = async (pageId: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    e.preventDefault()
+  const handleCreatePage = () => {
+    if (onCloseMobileSidebar) {
+      onCloseMobileSidebar()
+    }
+    router.push("/pages")
+  }
 
-    if (confirm("Are you sure you want to delete this page?")) {
-      const success = await deletePage(pageId)
-      if (success) {
-        toast({
-          title: "Page deleted",
-          description: "The page has been successfully deleted.",
-        })
+  const handleDeletePage = async (e: React.MouseEvent, pageId: string) => {
+    e.stopPropagation() // Prevent navigation to the page
 
-        // If we're currently on this page, navigate back to pages list
-        if (pathname.includes(pageId)) {
-          router.replace("/pages")
+    if (confirm(t("pages.deleteConfirm"))) {
+      setDeletingPageId(pageId)
+
+      try {
+        // Use the deletePage function from the pages context if available
+        if (pagesContext && pagesContext.deletePage) {
+          const success = await pagesContext.deletePage(pageId)
+
+          if (success) {
+            toast({
+              title: t("pages.deleteSuccess"),
+              variant: "default",
+            })
+            // Refresh the pages list
+            fetchPages()
+          } else {
+            toast({
+              title: t("pages.deleteError"),
+              variant: "destructive",
+            })
+          }
+        } else {
+          // Fallback to direct deletion if context not available
+          const { error } = await supabase.from("pages").delete().eq("id", pageId).eq("user_id", user?.id)
+
+          if (error) {
+            console.error("Error deleting page:", error)
+            toast({
+              title: t("pages.deleteError"),
+              variant: "destructive",
+            })
+          } else {
+            toast({
+              title: t("pages.deleteSuccess"),
+              variant: "default",
+            })
+            // Refresh the pages list
+            fetchPages()
+          }
         }
-      } else {
+      } catch (error) {
+        console.error("Unexpected error deleting page:", error)
         toast({
-          title: "Error",
-          description: "Failed to delete the page. Please try again.",
+          title: t("pages.deleteError"),
           variant: "destructive",
         })
+      } finally {
+        setDeletingPageId(null)
       }
     }
   }
 
-  if (isCollapsed) {
-    return null
-  }
+  if (isCollapsed) return null
 
   return (
-    <>
-      <div className="mt-4 px-4 py-2">
+    <div className="mt-4">
+      <div className="px-4 py-2">
+        {/* Always use LTR layout for the header */}
         <div className="flex items-center justify-between">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400">PAGES</h2>
-          <button
-            className="rounded p-1 transition-colors duration-200 hover:bg-[#1a1a1a]"
-            onClick={() => setIsCreateDialogOpen(true)}
-          >
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400">{t("pages.myPages")}</h2>
+          <button className="rounded p-1 transition-colors duration-200 hover:bg-[#1a1a1a]" onClick={handleCreatePage}>
             <Plus className="h-4 w-4 text-gray-400" />
           </button>
         </div>
@@ -99,85 +181,49 @@ export function PagesSidebar({ isCollapsed = false }) {
         {isLoading ? (
           <div className="flex items-center justify-center py-4">
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-500 border-t-transparent"></div>
-            <span className="ml-2 text-xs text-gray-500">Loading pages...</span>
+            <span className="ml-2 text-xs text-gray-500">{t("pages.loading")}</span>
           </div>
-        ) : rootPages.length > 0 ? (
-          rootPages.map((page) => (
-            <div key={page.id} className="flex items-center group">
-              <div
-                className={`flex-1 flex items-center rounded-md px-2 py-1.5 text-sm ${
-                  pathname.includes(page.id)
-                    ? "bg-[#1a1a1a] text-white"
-                    : "text-gray-400 hover:bg-[#1a1a1a] hover:text-white"
-                } cursor-pointer`}
-                onClick={(e) => handlePageClick(page.id, e)}
+        ) : pages.length > 0 ? (
+          pages.map((page) => (
+            <div
+              key={page.id}
+              className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-gray-400 transition-colors duration-200 hover:bg-[#1a1a1a] hover:text-white group"
+            >
+              <button
+                className="flex items-center text-left text-sm flex-grow overflow-hidden"
+                onClick={() => handlePageClick(page.id)}
               >
-                <FileText className="h-3.5 w-3.5 mr-2 flex-shrink-0" />
-                <span className="truncate">{page.title || "Untitled Page"}</span>
-              </div>
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={(e) => handleDeletePage(page.id, e)}
-                  className="rounded-md p-1 text-gray-500 hover:bg-[#333] hover:text-red-400"
-                  title="Delete page"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
+                <FileText className="h-3.5 w-3.5 flex-shrink-0 mr-2" />
+                <span className="truncate">{page.title || t("pages.untitled")}</span>
+              </button>
+              <button
+                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-700 transition-opacity duration-200"
+                onClick={(e) => handleDeletePage(e, page.id)}
+                aria-label={t("pages.delete")}
+                disabled={deletingPageId === page.id}
+              >
+                {deletingPageId === page.id ? (
+                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-gray-500 border-t-transparent"></div>
+                ) : (
+                  <Trash2 className="h-3.5 w-3.5 text-gray-400 hover:text-red-400" />
+                )}
+              </button>
             </div>
           ))
         ) : (
           <div className="text-center py-4">
-            <p className="text-sm text-gray-500">No pages yet</p>
+            <p className="text-sm text-gray-500">{t("pages.noPages")}</p>
             <Button
               variant="outline"
               size="sm"
               className="mt-2 text-xs border-[#333] bg-transparent hover:bg-[#1a1a1a]"
-              onClick={() => setIsCreateDialogOpen(true)}
+              onClick={handleCreatePage}
             >
-              Create a page
+              {t("pages.create")}
             </Button>
           </div>
         )}
       </div>
-
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="bg-[#1a1a1a] border-[#333] text-white">
-          <DialogHeader>
-            <DialogTitle>Create new page</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <Input
-              placeholder="Page title"
-              value={newPageTitle}
-              onChange={(e) => setNewPageTitle(e.target.value)}
-              className="bg-[#0f0f10] border-[#333] text-white"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleCreatePage()
-                }
-              }}
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsCreateDialogOpen(false)}
-              className="border-[#333] bg-transparent hover:bg-[#0f0f10] text-xs"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreatePage}
-              className="border border-[#333] bg-[#1a1a1a] hover:bg-[#0f0f10] text-xs"
-              disabled={!newPageTitle.trim()}
-            >
-              Create
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    </div>
   )
 }

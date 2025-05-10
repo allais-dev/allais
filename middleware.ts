@@ -2,12 +2,14 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs"
 
+// List of public routes that don't require authentication
+const PUBLIC_ROUTES = ["/", "/login", "/register", "/dashboard"]
+
 // List of protected routes that require authentication
-const PROTECTED_ROUTES = ["/dashboard", "/profile", "/settings", "/subscription", "/pages"]
+const PROTECTED_ROUTES = ["/profile", "/settings", "/subscription", "/pages"]
 
 // Patterns for dynamic protected routes
 const PROTECTED_DYNAMIC_ROUTE_PATTERNS = [
-  /^\/dashboard\?conversation=[a-zA-Z0-9-]+$/, // Dashboard with conversation parameter
   /^\/pages\/[a-zA-Z0-9-]+$/, // Pages with ID parameter
 ]
 
@@ -28,7 +30,17 @@ export async function middleware(req: NextRequest) {
     return res
   }
 
-  // Allow all routes by default, only check authentication for protected routes
+  // If it's the root path, redirect to dashboard
+  if (pathname === "/") {
+    return NextResponse.redirect(new URL("/dashboard", req.url))
+  }
+
+  // If it's a public route, allow access without authentication
+  if (PUBLIC_ROUTES.includes(pathname)) {
+    return res
+  }
+
+  // Check if route is protected
   const isProtectedRoute =
     PROTECTED_ROUTES.includes(pathname) ||
     PROTECTED_DYNAMIC_ROUTE_PATTERNS.some((pattern) => pattern.test(pathname) || pattern.test(fullPath))
@@ -41,12 +53,13 @@ export async function middleware(req: NextRequest) {
       } = await supabase.auth.getSession()
 
       // If no session and trying to access protected route, redirect to login
-      if (!session && isProtectedRoute) {
+      if (!session) {
         return NextResponse.redirect(new URL("/login", req.url))
       }
     } catch (error) {
       // If there's an auth error, just continue without throwing
       console.error("Auth error in middleware:", error)
+      return NextResponse.redirect(new URL("/login", req.url))
     }
   }
 

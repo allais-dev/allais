@@ -1,23 +1,33 @@
 "use client"
-
-import { useEffect, useState } from "react"
 import { useAuth } from "@/components/auth-provider"
-import { useRouter } from "next/navigation"
 import { Dashboard } from "@/components/dashboard"
 import { ChatProvider } from "@/contexts/chat-context"
+import { useSearchParams, useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 
 export default function DashboardPage() {
-  const { user, isLoading } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
+  const searchParams = useSearchParams()
+  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [key, setKey] = useState(0) // Add a key to force re-render when conversation changes
   const router = useRouter()
-  const [initialConversation, setInitialConversation] = useState(null)
 
+  // Get conversation ID from URL if present and update when it changes
   useEffect(() => {
-    if (!isLoading && !user) {
-      router.push("/login")
-    }
-  }, [user, isLoading, router])
+    if (searchParams) {
+      const id = searchParams.get("conversation")
 
-  if (isLoading) {
+      // If the conversation ID has changed, update state and force re-render
+      if (id !== conversationId) {
+        console.log(`Conversation ID changed from ${conversationId} to ${id}`)
+        setConversationId(id)
+        setKey((prevKey) => prevKey + 1) // Increment key to force re-render
+      }
+    }
+  }, [searchParams, conversationId])
+
+  // Skip loading state for non-logged-in users
+  if (authLoading && user) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#0f0f10]">
         <div className="text-center">
@@ -28,12 +38,11 @@ export default function DashboardPage() {
     )
   }
 
-  if (!user) {
-    return null // Will redirect in useEffect
-  }
+  // Only pass conversation ID if user is logged in
+  const initialConversationId = user && conversationId ? conversationId : null
 
   return (
-    <ChatProvider initialConversation={initialConversation}>
+    <ChatProvider key={key} initialConversationId={initialConversationId}>
       <Dashboard />
     </ChatProvider>
   )
