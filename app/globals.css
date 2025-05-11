@@ -1,0 +1,1998 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Removed the problematic @import statements */
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+/* Base styles */
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(to bottom, transparent, rgb(var(--background-end-rgb))) rgb(var(--background-start-rgb));
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+html,
+body {
+  background-color: #141414 !important;
+  color: white;
+}
+
+/* RTL Support - Updated font handling with higher specificity */
+html[dir="rtl"] {
+  font-family: "Tajawal", sans-serif !important;
+}
+
+html[dir="rtl"] * {
+  font-family: "Tajawal", sans-serif !important;
+}
+
+/* Make sure suggestion cards and headings use Tajawal font in Arabic */
+html[dir="rtl"] h1,
+html[dir="rtl"] h2,
+html[dir="rtl"] h3,
+html[dir="rtl"] h4,
+html[dir="rtl"] h5,
+html[dir="rtl"] h6,
+html[dir="rtl"] button,
+html[dir="rtl"] .suggestion-title,
+html[dir="rtl"] [class*="text-gradient"],
+html[dir="rtl"] .SuggestionCard h3,
+html[dir="rtl"] button[class*="border-0 bg-[#1e1e1e]"] h3 {
+  font-family: "Tajawal", sans-serif !important;
+}
+
+html[dir="ltr"] {
+  font-family: var(--font-noto-sans), sans-serif;
+}
+
+/* Custom z-index for header */
+header.relative.z-10 {
+  z-index: 99;
+}
+
+/* Custom grid styling */
+.grid-background {
+  background-size: 25% 100%;
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+}
+
+/* Custom styles for code blocks */
+pre {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+
+pre code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  display: block;
+  overflow-x: auto;
+  padding: 0;
+}
+
+/* Make sure code blocks display properly */
+code {
+  white-space: pre;
+  word-break: normal;
+  word-wrap: normal;
+}
+
+/* Syntax highlighting colors */
+.hljs {
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+/* Syntax highlighting colors - dark theme */
+.dark .hljs-keyword {
+  color: #c678dd !important;
+}
+
+.dark .hljs-string {
+  color: #98c379 !important;
+}
+
+.dark .hljs-comment {
+  color: #5c6370 !important;
+  font-style: italic !important;
+}
+
+.dark .hljs-function {
+  color: #61afef !important;
+}
+
+.dark .hljs-number {
+  color: #d19a66 !important;
+}
+
+.dark .hljs-operator {
+  color: #56b6c2 !important;
+}
+
+.dark .hljs-class {
+  color: #e5c07b !important;
+}
+
+.dark .hljs-title {
+  color: #61afef !important;
+}
+
+.dark .hljs-params {
+  color: #d19a66 !important;
+}
+
+.dark .hljs-built_in {
+  color: #e5c07b !important;
+}
+
+.dark .hljs-tag {
+  color: #e06c75 !important;
+}
+
+.dark .hljs-attribute {
+  color: #d19a66 !important;
+}
+
+.dark .hljs-name {
+  color: #e06c75 !important;
+}
+
+.dark .hljs-selector-id,
+.dark .hljs-selector-class {
+  color: #d19a66 !important;
+}
+
+.dark .hljs-selector-tag {
+  color: #e5c07b !important;
+}
+
+.dark .hljs-template-tag {
+  color: #c678dd !important;
+}
+
+.dark .hljs-template-variable {
+  color: #d19a66 !important;
+}
+
+/* Syntax highlighting colors - light theme */
+.light .hljs-keyword {
+  color: #8959a8 !important;
+}
+
+.light .hljs-string {
+  color: #718c00 !important;
+}
+
+.light .hljs-comment {
+  color: #8e908c !important;
+  font-style: italic !important;
+}
+
+.light .hljs-function {
+  color: #4271ae !important;
+}
+
+.light .hljs-number {
+  color: #f5871f !important;
+}
+
+.light .hljs-operator {
+  color: #3e999f !important;
+}
+
+.light .hljs-class {
+  color: #c99e00 !important;
+}
+
+.light .hljs-title {
+  color: #4271ae !important;
+}
+
+.light .hljs-params {
+  color: #f5871f !important;
+}
+
+.light .hljs-built_in {
+  color: #c99e00 !important;
+}
+
+.light .hljs-tag {
+  color: #c82829 !important;
+}
+
+.light .hljs-attribute {
+  color: #f5871f !important;
+}
+
+.light .hljs-name {
+  color: #c82829 !important;
+}
+
+.light .hljs-selector-id,
+.light .hljs-selector-class {
+  color: #f5871f !important;
+}
+
+.light .hljs-selector-tag {
+  color: #c99e00 !important;
+}
+
+.light .hljs-template-tag {
+  color: #8959a8 !important;
+}
+
+.light .hljs-template-variable {
+  color: #f5871f !important;
+}
+
+/* Ensure code blocks have appropriate text color */
+.dark pre code.hljs {
+  color: white;
+}
+
+.light pre code.hljs {
+  color: #333;
+}
+
+/* Enhanced slider-like scrollbar styles */
+::-webkit-scrollbar {
+  width: 10px; /* Wider scrollbar */
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(30, 30, 30, 0.2);
+  border-radius: 10px;
+  margin: 2px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: rgba(30, 30, 30, 0.2);
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.1);
+}
+
+.light ::-webkit-scrollbar-track {
+  background: rgba(200, 200, 200, 0.3);
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 10px;
+  border: 2px solid rgba(30, 30, 30, 0.2);
+  box-shadow: 0 0 2px rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #666;
+  border: 2px solid rgba(30, 30, 30, 0.2);
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: #999;
+  border: 2px solid rgba(200, 200, 200, 0.3);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #777;
+  border-width: 1px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #888;
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
+  background: #777;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: #999;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #555 rgba(30, 30, 30, 0.2);
+}
+
+.dark * {
+  scrollbar-color: #666 rgba(30, 30, 30, 0.2);
+}
+
+.light * {
+  scrollbar-color: #999 rgba(200, 200, 200, 0.3);
+}
+
+/* Apply the same slider-like style to all scrollbar classes */
+.custom-scrollbar,
+.sidebar-scrollbar,
+.tiny-scrollbar {
+  scrollbar-width: thin;
+}
+
+/* Animation classes */
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease-out forwards;
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Add slide-up animation */
+@keyframes slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Add slide-in-right animation */
+@keyframes slide-in-right {
+  0% {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Add slide-in-left animation */
+@keyframes slide-in-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Add scale animation */
+@keyframes scale-up {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Theme transition */
+.theme-transition {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+@keyframes float-slow {
+  0% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(0, 15px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes float-slow-reverse {
+  0% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(0, -15px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 8s ease-in-out infinite;
+}
+
+.animate-float-slow-delay {
+  animation: float-slow-reverse 8s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
+.animate-float-slow-delay-2 {
+  animation: float-slow 8s ease-in-out infinite;
+  animation-delay: 4s;
+}
+
+.animate-float-slow-delay-3 {
+  animation: float-slow-reverse 8s ease-in-out infinite;
+  animation-delay: 6s;
+}
+
+/* Animation classes for scroll animations */
+.animate-in-slide-up {
+  opacity: 0;
+  transform: translateY(30px);
+  animation: slide-up 0.6s ease-out forwards;
+}
+
+.animate-in-slide-right {
+  opacity: 0;
+  transform: translateX(30px);
+  animation: slide-in-right 0.6s ease-out forwards;
+}
+
+.animate-in-slide-left {
+  opacity: 0;
+  transform: translateX(-30px);
+  animation: slide-in-left 0.6s ease-out forwards;
+}
+
+.animate-in-scale {
+  opacity: 0;
+  transform: scale(0.8);
+  animation: scale-up 0.5s ease-out forwards;
+}
+
+/* Add pulse animation */
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* Add shimmer animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Add these to the animation section in the theme extend */
+
+.animate-pulse-slow {
+  animation: pulse 3s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite;
+}
+
+/* Add animation delay utilities */
+.animate-delay-100 {
+  animation-delay: 100ms;
+}
+
+.animate-delay-200 {
+  animation-delay: 200ms;
+}
+
+.animate-delay-300 {
+  animation-delay: 300ms;
+}
+
+.animate-delay-400 {
+  animation-delay: 400ms;
+}
+
+.animate-delay-500 {
+  animation-delay: 500ms;
+}
+
+.animate-delay-700 {
+  animation-delay: 700ms;
+}
+
+.animate-delay-1000 {
+  animation-delay: 1000ms;
+}
+
+/* Make animations active by default for better visibility */
+.animate-active {
+  opacity: 1;
+  transform: translateY(0) translateX(0) scale(1);
+}
+
+/* Ensure animations play on page load */
+[data-animate] {
+  animation-play-state: running !important;
+}
+
+/* Add more animation classes to ensure all animations work properly */
+
+/* Add a fade-in animation class: */
+.animate-in-fade {
+  opacity: 0;
+  animation: fade-in 0.8s ease-out forwards;
+}
+
+/* Add a staggered animation class for lists: */
+.animate-in-stagger > * {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.animate-in-stagger > *:nth-child(1) {
+  animation: slide-up 0.5s ease-out 0.1s forwards;
+}
+.animate-in-stagger > *:nth-child(2) {
+  animation: slide-up 0.5s ease-out 0.2s forwards;
+}
+.animate-in-stagger > *:nth-child(3) {
+  animation: slide-up 0.5s ease-out 0.3s forwards;
+}
+.animate-in-stagger > *:nth-child(4) {
+  animation: slide-up 0.5s ease-out 0.4s forwards;
+}
+.animate-in-stagger > *:nth-child(5) {
+  animation: slide-up 0.5s ease-out 0.5s forwards;
+}
+.animate-in-stagger > *:nth-child(6) {
+  animation: slide-up 0.5s ease-out 0.6s forwards;
+}
+.animate-in-stagger > *:nth-child(7) {
+  animation: slide-up 0.5s ease-out 0.7s forwards;
+}
+
+/* Add a bounce animation for emphasis: */
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-in-bounce {
+  opacity: 0;
+  animation: bounce-in 0.6s ease-out forwards;
+}
+
+/* Add a highlight animation for important elements: */
+@keyframes highlight {
+  0% {
+    background-position: -100% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-highlight {
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0), rgba(56, 189, 248, 0.2), rgba(56, 189, 248, 0));
+  background-size: 200% 100%;
+  animation: highlight 2s ease-in-out;
+}
+
+/* Ensure animations play on scroll: */
+[data-animate].animate-active {
+  animation-play-state: running !important;
+}
+
+/* Message content styling - completely redesigned */
+.message-content {
+  line-height: 1.5;
+}
+
+/* Simple, clean list styling that matches the screenshot */
+.message-list {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+.message-list-numbered {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: item;
+}
+
+.message-list-item {
+  position: relative;
+  padding-left: 1.5em;
+  margin-bottom: 1em;
+}
+
+/* Simple bullet styling that matches the screenshot */
+.message-list-item::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 1.2em;
+  color: white;
+}
+
+.message-list-numbered .message-list-item::before {
+  content: counter(item) ".";
+  counter-increment: item;
+  left: 0;
+}
+
+/* Make sure paragraphs in list items have proper spacing */
+.message-list-item p {
+  margin: 0;
+  display: inline-block;
+}
+
+/* Fix for nested lists */
+.message-list-item .message-list,
+.message-list-item .message-list-numbered {
+  margin-top: 1em;
+}
+
+/* Override any existing styles that might be interfering */
+.markdown-content ul,
+.markdown-content ol,
+.chat-content ul,
+.chat-content ol,
+.chat-list,
+.chat-list-numbered,
+.simple-list,
+.simple-list-numbered {
+  list-style-type: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.markdown-content li,
+.chat-content li,
+.chat-list-item,
+.simple-list li,
+.simple-list-numbered li {
+  position: relative !important;
+  padding-left: 1.5em !important;
+  margin-bottom: 1em !important;
+}
+
+.markdown-content li::before,
+.chat-content li::before,
+.chat-list-item::before,
+.simple-list li::before {
+  content: "•" !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  font-size: 1.2em !important;
+  color: white !important;
+}
+
+.markdown-content li p,
+.chat-content li p,
+.chat-list-item p,
+.simple-list li p,
+.simple-list-numbered li p {
+  margin: 0 !important;
+  display: inline-block !important;
+}
+
+/* Ensure strong tags are properly styled */
+.message-content strong {
+  font-weight: bold;
+  color: white;
+}
+
+/* Ensure proper spacing between list items */
+.message-list-item + .message-list-item {
+  margin-top: 0.5em;
+}
+
+/* Ensure proper spacing for paragraphs */
+.message-content p {
+  margin: 0.5em 0;
+}
+
+/* Ensure proper spacing for headings */
+.message-content h1,
+.message-content h2,
+.message-content h3,
+.message-content h4,
+.message-content h5,
+.message-content h6 {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+/* Smooth scrolling for anchor links */
+html {
+  scroll-behavior: smooth;
+}
+
+/* NEW STYLES FOR SUGGESTION CARDS AND BACKGROUND */
+
+/* Change background color for all pages */
+body,
+.bg-[#0f0f10], 
+div[class*="bg-[#0f0f10]"] {
+  background-color: #141414 !important;
+}
+
+/* Slow down auto-scroll animation */
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.auto-scroll {
+  animation: scroll 60s linear infinite !important; /* Slowed down from 30s to 60s */
+}
+
+/* Font sizes for suggestion cards - desktop and mobile */
+@media (min-width: 768px) {
+  /* Larger text on desktop with vw units */
+  .SuggestionCard h3,
+  button[class*="border-0 bg-[#1e1e1e]"] h3 {
+    font-size: 1.2vw !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Hide description text on desktop */
+  .SuggestionCard p,
+  button[class*="border-0 bg-[#1e1e1e]"] p {
+    display: none !important;
+  }
+}
+
+/* Mobile font size */
+@media (max-width: 767px) {
+  .SuggestionCard h3,
+  button[class*="border-0 bg-[#1e1e1e]"] h3 {
+    font-size: 4vw !important;
+    line-height: 1.5 !important;
+  }
+}
+
+/* Apply styles to suggestion cards */
+button[class*="border-0 bg-[#1e1e1e]"] {
+  background-color: #1e1e1e !important;
+  min-height: 40px !important;
+}
+
+/* Target all sidebar elements */
+.border-r.border-[#333],
+div[class*="border-r border-[#333]"],
+aside,
+nav[class*="bg-"],
+.sidebar,
+div[class*="sidebar"],
+div[class*="w-64"],
+div[class*="w-60"],
+div[class*="w-56"],
+nav,
+aside,
+.bg-[#0f0f10],
+div[class*="bg-[#0f0f10]"] {
+  background-color: #141414 !important;
+  border-color: #222 !important;
+}
+
+/* Target all chat interface elements */
+.bg-[#1a1a1a], 
+div[class*="bg-[#1a1a1a]"],
+.bg-[#0f0f10], 
+div[class*="bg-[#0f0f10]"],
+main,
+section,
+.chat-container,
+div[class*="chat-container"],
+.message-container,
+div[class*="message-container"],
+.chat-window,
+div[class*="chat-window"],
+.chat-area,
+div[class*="chat-area"],
+.chat-interface,
+div[class*="chat-interface"],
+.chat-messages,
+div[class*="chat-messages"],
+.message-list,
+div[class*="message-list"] {
+  background-color: #141414 !important;
+}
+
+/* Style for "Ask me anything" text - UPDATED */
+h1.mb-8.text-4xl,
+h1[class*="mb-8 text-4xl"],
+.text-2xl[class*="text-gradient"],
+[class*="text-2xl text-gradient"] {
+  letter-spacing: -.025em !important;
+  font-size: 2.17rem !important;
+  font-weight: 800 !important;
+}
+
+/* Style for "ChatGPT & Gemini in One Place" text - UPDATED */
+h3.mb-2.text-lg,
+h3[class*="mb-2 text-lg"] {
+  letter-spacing: -.025em !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+}
+
+/* Make sure the suggestion card title is bigger on desktop */
+@media (min-width: 768px) {
+  button[class*="border-0 bg-[#1e1e1e]"] h3 {
+    font-size: 1.2vw !important;
+  }
+}
+
+/* Make sure the suggestion card title is appropriate on mobile */
+@media (max-width: 767px) {
+  button[class*="border-0 bg-[#1e1e1e]"] h3 {
+    font-size: 4vw !important; /* Larger on mobile for better readability */
+  }
+}
+
+/* Remove icons from suggestion cards */
+button[class*="border-0 bg-[#1e1e1e]"] div:first-child {
+  display: none !important;
+}
+
+/* Center the text in suggestion cards */
+button[class*="border-0 bg-[#1e1e1e]"] {
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+button[class*="border-0 bg-[#1e1e1e]"] div:nth-child(2) {
+  text-align: center !important;
+}
+
+/* Adjust padding for suggestion cards without icons */
+button[class*="border-0 bg-[#1e1e1e]"] {
+  padding: 0.75rem !important;
+}
+
+/* Force background color on all possible chat and sidebar elements */
+.dark .bg-background,
+.dark [class*="bg-background"],
+.dark .bg-card,
+.dark [class*="bg-card"],
+.dark .bg-popover,
+.dark [class*="bg-popover"],
+.dark .bg-primary,
+.dark [class*="bg-primary"],
+.dark .bg-secondary,
+.dark [class*="bg-secondary"],
+.dark .bg-muted,
+.dark [class*="bg-muted"],
+.dark .bg-accent,
+.dark [class*="bg-accent"],
+.bg-[#0f0f10],
+.bg-[#1a1a1a],
+.bg-[#111],
+.bg-[#121212],
+.bg-[#181818],
+.bg-[#1c1c1c],
+.bg-[#1f1f1f],
+.bg-[#222],
+.bg-[#2a2a2a],
+.bg-[#2d2d2d],
+.bg-[#333],
+div[class*="bg-[#0f0f10]"],
+div[class*="bg-[#1a1a1a]"],
+div[class*="bg-[#111]"],
+div[class*="bg-[#121212]"],
+div[class*="bg-[#181818]"],
+div[class*="bg-[#1c1c1c]"],
+div[class*="bg-[#1f1f1f]"],
+div[class*="bg-[#222]"],
+div[class*="bg-[#2a2a2a]"],
+div[class*="bg-[#2d2d2d]"],
+div[class*="bg-[#333]"] {
+  background-color: #141414 !important;
+}
+
+/* Force background color on all possible containers */
+.container,
+.wrapper,
+.content,
+.page,
+.layout,
+.app,
+div[class*="container"],
+div[class*="wrapper"],
+div[class*="content"],
+div[class*="page"],
+div[class*="layout"],
+div[class*="app"] {
+  background-color: #141414 !important;
+}
+
+/* Force background color for elements that might be missed */
+body > div,
+#__next,
+#root,
+.app-container,
+.main-container,
+.layout-container,
+div[id*="__next"],
+div[id*="root"],
+div[class*="app-container"],
+div[class*="main-container"],
+div[class*="layout-container"] {
+  background-color: #141414 !important;
+}
+
+/* More targeted background color rules */
+[style*="background-color"]:not(.message-bubble):not([class*="bg-[#1a1a1a]"]),
+[style*="background:#"]:not(.message-bubble):not([class*="bg-[#1a1a1a]"]),
+[style*="background: #"]:not(.message-bubble):not([class*="bg-[#1a1a1a]"]),
+[style*="background-color:#"]:not(.message-bubble):not([class*="bg-[#1a1a1a]"]),
+[style*="background-color: #"]:not(.message-bubble):not([class*="bg-[#1a1a1a]"]) {
+  background-color: #141414 !important;
+}
+
+/* Apply bg-[#141414] to most elements with bg- classes, but exclude specific ones */
+[class*="bg-"]:not(.bg-[#1a1a1a]):not([class*="bg-[#1a1a1a]"]):not(.bg-[#1e1e1e]):not([class*="bg-[#1e1e1e]"]):not(
+    .message-bubble
+  ):not(.suggestion-card):not(.bg-indigo-600):not(.bg-indigo-700):not(.bg-indigo-800):not([class*="bg-indigo-600"]):not(
+    [class*="bg-indigo-700"]
+  ):not([class*="bg-indigo-800"]):not(.hover\:bg-[#333]):not([class*="hover:bg-[#333]"]) {
+  background-color: #141414 !important;
+}
+
+/* Ensure suggestion cards have the correct background */
+.bg-[#1e1e1e], [class*="bg-[#1e1e1e]"], .suggestion-card, button[class*="border-0 bg-[#1e1e1e]"] {
+  background-color: #1e1e1e !important;
+}
+
+/* Add these styles to fix the input background color */
+input,
+textarea,
+select,
+.input,
+[type="text"],
+[type="email"],
+[type="url"],
+[type="password"],
+[type="number"],
+[type="date"],
+[type="datetime-local"],
+[type="month"],
+[type="search"],
+[type="tel"],
+[type="time"],
+[type="week"],
+[multiple],
+textarea,
+select {
+  background-color: #1a1a1a !important;
+  border-color: #333 !important;
+  color: white !important;
+}
+
+/* Ensure submit buttons have the correct background color */
+button[type="submit"],
+.bg-indigo-600,
+button.bg-indigo-600,
+[class*="bg-indigo-600"] {
+  background-color: rgb(79 70 229) !important;
+}
+
+button[type="submit"]:hover,
+.bg-indigo-600:hover,
+button.bg-indigo-600:hover,
+[class*="bg-indigo-600"]:hover {
+  background-color: rgb(67 56 202) !important;
+}
+
+/* Ensure chat input container has the correct background color */
+.flex.flex-wrap.items-center.rounded-lg,
+div[class*="flex flex-wrap items-center rounded-lg"],
+.chat-input-container,
+div[class*="chat-input-container"] {
+  background-color: #1a1a1a !important;
+  border-color: #1a1a1a !important;
+}
+
+/* Make sure all elements inside the chat input container maintain proper styling */
+.flex.flex-wrap.items-center.rounded-lg *,
+div[class*="flex flex-wrap items-center rounded-lg"] * {
+  background-color: transparent !important;
+}
+
+/* Fix hover buttons inside chat input */
+.flex.flex-wrap.items-center.rounded-lg button:hover,
+div[class*="flex flex-wrap items-center rounded-lg"] button:hover {
+  background-color: #252525 !important;
+}
+
+/* Fix hover behavior on suggestion cards - completely disable animation pause */
+.auto-scroll,
+div[class*="auto-scroll"],
+.suggestions-container,
+div[class*="suggestions-container"] {
+  pointer-events: none !important;
+  animation-play-state: running !important;
+}
+
+/* But enable pointer events on the actual buttons */
+button[class*="border-0 bg-[#1e1e1e]"] {
+  pointer-events: auto !important;
+}
+
+/* Prevent animation from restarting on hover */
+.auto-scroll:hover,
+div[class*="auto-scroll"]:hover,
+.suggestions-container:hover,
+div[class*="suggestions-container"]:hover,
+.auto-scroll:hover *,
+div[class*="auto-scroll"]:hover * {
+  animation-play-state: running !important;
+  animation: none;
+  animation: scroll 60s linear infinite !important;
+  animation-delay: inherit !important;
+  animation-play-state: running !important;
+}
+
+/* Make sure the Google sign-in button keeps its original styling */
+button[onClick*="Google"],
+button[onclick*="Google"],
+button:has(svg[viewBox="0 0 24 24"]:has(path[fill="#4285F4"])) {
+  background-color: #1a1a1a !important;
+  border-color: #333 !important;
+}
+
+button[onClick*="Google"]:hover,
+button[onclick*="Google"]:hover,
+button:has(svg[viewBox="0 0 24 24"]:has(path[fill="#4285F4"])):hover {
+  background-color: #252525 !important;
+}
+
+/* Add these typography style updates to the end of the file */
+
+h1.mb-8.text-4xl,
+h1[class*="mb-8 text-4xl"],
+.text-2xl[class*="text-gradient"],
+[class*="text-2xl text-gradient"] {
+  letter-spacing: -.025em !important;
+  font-size: 2.17rem !important;
+  font-weight: 800 !important;
+}
+
+h3.mb-2.text-lg,
+h3[class*="mb-2 text-lg"] {
+  letter-spacing: -.025em !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+}
+
+/* Smooth sidebar transition */
+.fixed.inset-0.z-50 {
+  transition: opacity 0.3s ease;
+}
+
+/* Ensure the sidebar opens smoothly */
+.fixed.inset-0.z-50 > div {
+  transition: transform 0.3s ease;
+}
+
+/* Fix for mobile view transitions */
+@media (max-width: 767px) {
+  .fixed.inset-0.z-50 {
+    opacity: 1;
+  }
+
+  .fixed.inset-0.z-50 > div {
+    transform: translateX(0);
+  }
+
+  .hidden.md\:relative.md\:block {
+    display: none;
+  }
+}
+
+/* Improve transitions for sidebar and overlay */
+.bg-black.bg-opacity-50 {
+  transition: opacity 0.3s ease;
+}
+
+.relative.z-50.h-full {
+  transition: transform 0.3s ease, width 0.3s ease;
+}
+
+/* Fix for sidebar toggling */
+.relative.z-50.h-full.w-\[270px\] {
+  transform: translateX(0);
+}
+
+/* Remove glitches during transitions */
+.transition-all {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  will-change: transform, opacity;
+}
+
+/* Sidebar animation */
+.transition-all.duration-150,
+.transition-all.duration-200,
+.transition-all.duration-300 {
+  transition-duration: 0.3s !important;
+}
+
+/* Fix sidebar animation glitches */
+.fixed.inset-0.z-50 {
+  will-change: opacity;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  perspective: 1000px;
+  -webkit-perspective: 1000px;
+}
+
+/* Prevent sidebar from disappearing too quickly */
+.fixed.inset-0.z-50.block {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Ensure sidebar stays visible during transition */
+.relative.z-50.h-full.w-\[270px\] {
+  visibility: visible !important;
+  opacity: 1 !important;
+  transform: translateX(0) !important;
+}
+
+/* Prevent sidebar from flickering */
+.fixed.inset-0.z-50,
+.fixed.inset-0.bg-black.bg-opacity-50.z-40 {
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+}
+
+/* Mobile sidebar specific styles */
+@media (max-width: 767px) {
+  /* Ensure sidebar is visible by default on mobile */
+  .fixed.inset-0.z-50.block {
+    display: block !important;
+  }
+
+  /* Ensure main content doesn't overflow under sidebar */
+  main.flex-1.overflow-auto {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+/* Ensure consistent heading size across devices */
+h1.text-xl {
+  font-size: 1.25rem !important; /* text-xl size */
+  line-height: 1.75rem !important;
+}
+
+@media (min-width: 768px) {
+  h1.text-xl {
+    font-size: 1.25rem !important; /* Keep the same size on desktop */
+    line-height: 1.75rem !important;
+  }
+}
+
+/* Add these styles to make the sidebar take full width on mobile */
+@media (max-width: 768px) {
+  .mobile-sidebar {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .mobile-sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .mobile-sidebar-close {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+  }
+}
+
+/* Mobile sidebar full width styles */
+@media (max-width: 767px) {
+  .fixed.inset-0.z-50 > div {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Ensure the sidebar content takes full width */
+  .fixed.inset-0.z-50 .w-\[270px\] {
+    width: 100% !important;
+  }
+}
+
+/* RTL Support */
+html[dir="rtl"] {
+  font-family: "Tajawal", sans-serif;
+}
+
+html[dir="ltr"] {
+  font-family: "Noto Sans", sans-serif;
+}
+
+/* RTL specific styles */
+html[dir="rtl"] .sidebar {
+  border-left: 1px solid #e5e7eb;
+  border-right: none;
+}
+
+html[dir="rtl"]
+  .border-r.border-[#333],
+html[dir="rtl"] div[class*="border-r border-[#333]"] {
+  border-right: none !important;
+  border-left: 1px solid #333333 !important;
+}
+
+html[dir="rtl"] .sidebar-toggle {
+  right: auto;
+  left: 1rem;
+}
+
+html[dir="rtl"] .sidebar-content {
+  text-align: right;
+}
+
+html[dir="rtl"] .sidebar-header {
+  flex-direction: row-reverse;
+}
+
+html[dir="rtl"] .sidebar-title {
+  margin-right: 0;
+  margin-left: auto;
+}
+
+html[dir="rtl"] .sidebar-icon {
+  margin-right: 0;
+  margin-left: 0.5rem;
+}
+
+html[dir="rtl"] .conversation-item {
+  flex-direction: row-reverse;
+}
+
+html[dir="rtl"] .conversation-item-icon {
+  margin-right: 0;
+  margin-left: 0.5rem;
+}
+
+html[dir="rtl"] .conversation-item-title {
+  text-align: right;
+}
+
+html[dir="rtl"] .chat-input-container {
+  flex-direction: row-reverse;
+}
+
+html[dir="rtl"] .chat-input {
+  text-align: right;
+}
+
+html[dir="rtl"] .chat-send-button {
+  margin-left: 0;
+  margin-right: 0.5rem;
+}
+
+html[dir="rtl"] .message-container {
+  flex-direction: row-reverse;
+}
+
+html[dir="rtl"] .message-content {
+  text-align: right;
+}
+
+html[dir="rtl"] .message-avatar {
+  margin-right: 0;
+  margin-left: 0.5rem;
+}
+
+/* Fix for flex direction in RTL */
+html[dir="rtl"] .flex-row {
+  flex-direction: row-reverse;
+}
+
+html[dir="rtl"] .ml-auto {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+html[dir="rtl"] .mr-auto {
+  margin-right: 0;
+  margin-left: auto;
+}
+
+html[dir="rtl"] .ml-1 {
+  margin-left: 0;
+  margin-right: 0.25rem;
+}
+
+html[dir="rtl"] .ml-2 {
+  margin-left: 0;
+  margin-right: 0.5rem;
+}
+
+html[dir="rtl"] .ml-3 {
+  margin-left: 0;
+  margin-right: 0.75rem;
+}
+
+html[dir="rtl"] .ml-4 {
+  margin-left: 0;
+  margin-right: 1rem;
+}
+
+html[dir="rtl"] .mr-1 {
+  margin-right: 0;
+  margin-left: 0.25rem;
+}
+
+html[dir="rtl"] .mr-2 {
+  margin-right: 0;
+  margin-left: 0.5rem;
+}
+
+html[dir="rtl"] .mr-3 {
+  margin-right: 0;
+  margin-left: 0.75rem;
+}
+
+html[dir="rtl"] .mr-4 {
+  margin-right: 0;
+  margin-left: 1rem;
+}
+
+/* Utility class to prevent RTL flipping for specific elements */
+.no-rtl-flip {
+  direction: ltr !important;
+}
+
+/* Mobile sidebar in RTL */
+@media (max-width: 768px) {
+  html[dir="rtl"] .mobile-sidebar {
+    right: 0;
+    left: auto;
+    transform: translateX(100%);
+  }
+
+  html[dir="rtl"] .mobile-sidebar.open {
+    transform: translateX(0);
+  }
+}
+
+/* Chat interface RTL fixes */
+html[dir="rtl"] .message-form {
+  direction: ltr; /* Keep the form LTR for proper input handling */
+}
+
+html[dir="rtl"] .message-form-inner {
+  flex-direction: row-reverse;
+}
+
+html[dir="rtl"] .message-input {
+  text-align: right;
+}
+
+/* App layout RTL fixes */
+html[dir="rtl"] .app-container {
+  flex-direction: row-reverse;
+}
+
+/* Settings page RTL fixes */
+html[dir="rtl"] .settings-container {
+  text-align: right;
+}
+
+html[dir="rtl"] .settings-section {
+  text-align: right;
+}
+
+html[dir="rtl"] .settings-option {
+  flex-direction: row-reverse;
+}
+
+/* Login/Register page RTL fixes */
+html[dir="rtl"] .auth-container {
+  text-align: right;
+}
+
+html[dir="rtl"] .auth-form {
+  text-align: right;
+}
+
+html[dir="rtl"] .auth-link {
+  text-align: right;
+}
+
+/* Add this to your globals.css file to ensure the sidebar toggle button is not affected by RTL styles */
+.rtl\:ml-auto.rtl\:mr-0 {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+
+/* RTL text input support */
+input[dir="rtl"],
+textarea[dir="rtl"] {
+  text-align: right;
+  direction: rtl;
+}
+
+input[dir="rtl"]::placeholder,
+textarea[dir="rtl"]::placeholder {
+  text-align: right;
+}
+
+/* Keep UI layout the same but support RTL text */
+.rtl-text-only {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Ensure message bubbles display Arabic text correctly */
+html[dir="rtl"] .message-bubble .whitespace-pre-wrap,
+html[dir="rtl"] .message-content {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Fix for emoji picker in RTL mode */
+html[dir="rtl"] .emoji-picker {
+  direction: ltr;
+}
+
+/* Keep the send button on the right in both LTR and RTL modes */
+html[dir="rtl"] .chat-input-container .flex-shrink-0 {
+  flex-direction: row;
+}
+
+/* Ensure indigo buttons always have the correct background */
+button.bg-indigo-600 {
+  background-color: rgb(79 70 229) !important;
+}
+
+button.bg-indigo-600:hover {
+  background-color: rgb(67 56 202) !important;
+}
+
+/* CRITICAL: Override any styles that might affect indigo buttons */
+.bg-indigo-600,
+button.bg-indigo-600,
+[class*="bg-indigo-600"],
+button[type="submit"] {
+  background-color: rgb(79 70 229) !important;
+}
+
+.bg-indigo-700,
+button.bg-indigo-700,
+[class*="bg-indigo-700"],
+button[type="submit"]:hover,
+.bg-indigo-600:hover,
+button.bg-indigo-600:hover,
+[class*="bg-indigo-600"]:hover {
+  background-color: rgb(67 56 202) !important;
+}
+
+.bg-indigo-800,
+button.bg-indigo-800,
+[class*="bg-indigo-800"] {
+  background-color: rgb(55 48 163) !important;
+}
+
+/* Add hover styles for sidebar navigation buttons */
+nav.space-y-1.px-3.py-2
+  button.flex.w-full.justify-start.items-center.gap-2.rounded-md.px-2.py-1\.5.text-left.text-sm.transition-colors.duration-200.text-gray-400:hover {
+  background-color: #1a1a1a !important;
+}
+
+/* Make sure sidebar toggle button doesn't get hover styles */
+button.rounded-md.p-1.transition-colors.duration-200.hover\:bg-\[\#1a1a1a\].text-gray-400.flex-shrink-0:hover {
+  background-color: transparent !important;
+}
+
+/* More specific selector for sidebar toggle button */
+button[aria-label="Toggle sidebar"]:hover,
+button.sidebar-toggle:hover,
+button.rounded-md.p-1:hover {
+  background-color: transparent !important;
+}
+
+/* Target the specific sidebar toggle button with SVG */
+button:has(svg[viewBox="0 0 24 24"]:has(path[fillRule="evenodd"])):hover {
+  background-color: transparent !important;
+}
+
+/* Ensure message input area has the correct background color */
+.flex.flex-col.md\:flex-row.items-center.rounded-lg.border.border-\[\#1a1a1a\].bg-\[\#1a1a1a\].px-4.py-2.w-full.max-w-3xl.mx-auto,
+.flex.flex-col.md\:flex-row.items-center.rounded-lg.border.border-\[\#1a1a1a\].bg-\[\#1a1a1a\].px-4.py-2.w-full.max-w-3xl.mx-auto
+  * {
+  background: #1a1a1a !important;
+}
+
+/* Fix for message input buttons */
+button.rounded.p-2.transition-colors.duration-200.hover\:bg-\[\#333\].hover\:text-white,
+button.flex.items-center.gap-1.rounded.px-2.py-1.text-sm.transition-colors.duration-200.hover\:bg-\[\#333\].focus\:outline-none {
+  background-color: transparent !important;
+}
+
+/* Ensure hover state works correctly for these buttons */
+button.rounded.p-2.transition-colors.duration-200.hover\:bg-\[\#333\].hover\:text-white:hover,
+button.flex.items-center.gap-1.rounded.px-2.py-1.text-sm.transition-colors.duration-200.hover\:bg-\[\#333\].focus\:outline-none:hover {
+  background-color: #333 !important;
+}
+
+/* Specific fix for emoji button */
+button:has(svg.lucide-smile-plus) {
+  background-color: transparent !important;
+}
+
+button:has(svg.lucide-smile-plus):hover {
+  background-color: #333 !important;
+}
+
+/* Specific fix for paperclip button */
+button:has(svg.lucide-paperclip) {
+  background-color: transparent !important;
+}
+
+button:has(svg.lucide-paperclip):hover {
+  background-color: #333 !important;
+}
+
+/* Specific fix for model selector button */
+button:has(span.text-green-400) {
+  background-color: transparent !important;
+}
+
+button:has(span.text-green-400):hover {
+  background-color: #333 !important;
+}
+
+/* Specific fix for send button */
+button:has(svg.lucide-send) {
+  background-color: transparent !important;
+}
+
+button:has(svg.lucide-send):hover:not([disabled]) {
+  background-color: #333 !important;
+}
+
+/* Add these styles at the end of the file */
+
+/* Mobile sidebar expansion */
+@media (max-width: 767px) {
+  /* Default state - collapsed */
+  .w-\[60px\].flex-shrink-0.border-r.border-\[\#333333\].bg-\[\#141414\].transition-all.duration-300.h-full.flex.flex-col.relative.overflow-hidden {
+    width: 60px !important;
+    transition: width 0.3s ease-in-out !important;
+  }
+
+  /* Expanded state */
+  .w-\[60px\].flex-shrink-0.border-r.border-\[\#333333\].bg-\[\#141414\].transition-all.duration-300.h-full.flex.flex-col.relative.overflow-hidden.mobile-expanded {
+    width: 100% !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 100 !important;
+    height: 100vh !important;
+  }
+
+  /* Add a close button for the expanded mobile sidebar */
+  .mobile-expanded .mobile-close-btn {
+    display: flex !important;
+  }
+
+  /* Hide the mobile close button by default */
+  .mobile-close-btn {
+    display: none !important;
+    position: absolute !important;
+    top: 1rem !important;
+    right: 1rem !important;
+    background-color: transparent !important;
+    border: none !important;
+    color: #999 !important;
+    cursor: pointer !important;
+    z-index: 101 !important;
+  }
+}
+
+/* Add this to your globals.css file */
+
+/* Code block styling */
+.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 0.5em;
+  color: #abb2bf;
+  background: #282c34;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: #5c6370;
+  font-style: italic;
+}
+
+.hljs-doctag,
+.hljs-keyword,
+.hljs-formula {
+  color: #c678dd;
+}
+
+.hljs-section,
+.hljs-name,
+.hljs-selector-tag,
+.hljs-deletion,
+.hljs-subst {
+  color: #e06c75;
+}
+
+.hljs-literal {
+  color: #56b6c2;
+}
+
+.hljs-string,
+.hljs-regexp,
+.hljs-addition,
+.hljs-attribute,
+.hljs-meta-string {
+  color: #98c379;
+}
+
+.hljs-built_in,
+.hljs-class .hljs-title {
+  color: #e6c07b;
+}
+
+.hljs-attr,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-type,
+.hljs-selector-class,
+.hljs-selector-attr,
+.hljs-selector-pseudo,
+.hljs-number {
+  color: #d19a66;
+}
+
+.hljs-symbol,
+.hljs-bullet,
+.hljs-link,
+.hljs-meta,
+.hljs-selector-id,
+.hljs-title {
+  color: #61aeee;
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}
+
+.hljs-link {
+  text-decoration: underline;
+}
+
+/* Make sure code blocks are properly styled */
+pre {
+  margin: 0;
+  padding: 0;
+}
+
+code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+}
+
+/* Add these styles to the end of the file */
+
+/* Message content styling */
+.message-content h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: #111827;
+}
+
+.message-content p {
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.message-content ul,
+.message-content ol {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.message-content ul {
+  list-style-type: disc;
+}
+
+.message-content ol {
+  list-style-type: decimal;
+}
+
+.message-content li {
+  margin-bottom: 0.5rem;
+}
+
+.message-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+  border: 1px solid #e5e7eb;
+}
+
+.message-content th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  text-align: left;
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+}
+
+.message-content td {
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+}
+
+.dark .message-content h3 {
+  color: #f3f4f6;
+}
+
+.dark .message-content table {
+  border-color: #374151;
+}
+
+.dark .message-content th {
+  background-color: #1f2937;
+  border-color: #374151;
+}
+
+.dark .message-content td {
+  border-color: #374151;
+}
+
+/* Add these styles at the end of the file */
+
+/* Article-like content styling */
+.message-article {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans",
+    "Helvetica Neue", sans-serif;
+  line-height: 1.6;
+  color: #374151;
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+.dark .message-article {
+  color: #e5e7eb;
+}
+
+.article-content {
+  /* Removed display: flex, flex-direction: column, and gap: 1rem */
+}
+
+/* Heading styles */
+.article-content h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 2rem !important; /* Keep larger top margin for headings */
+  margin-bottom: 15px !important;
+  color: #111827;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+  letter-spacing: -0.025em;
+}
+
+/* Remove border-bottom in dark mode */
+.dark .article-content h3 {
+  color: #f9fafb;
+  border-bottom: none;
+}
+
+/* Section divider styling */
+.section-divider {
+  position: relative;
+  margin-top: 4rem !important; /* Increased from 3rem */
+  margin-bottom: 2rem !important; /* Increased from 1.5rem */
+  padding-bottom: 1rem;
+}
+
+/* First heading shouldn't have the extra top margin */
+.section-divider:first-child {
+  margin-top: 0 !important;
+}
+
+/* Add spacing between content sections */
+.content-sections > * {
+  margin-bottom: 2.5rem;
+}
+
+/* Paragraph styles */
+.article-content p {
+  margin-bottom: 15px !important;
+  margin-top: 10px !important;
+  line-height: 1.75;
+  font-size: 1rem;
+}
+
+/* List styles */
+.article-content ul.article-list,
+.article-content ol.article-list {
+  margin-bottom: 15px !important;
+  margin-top: 10px !important;
+  padding-left: 1.75rem;
+}
+
+.article-content ul.article-list li,
+.article-content ol.article-list li {
+  margin-bottom: 15px !important;
+  line-height: 1.6;
+  position: relative;
+}
+
+/* Table styles */
+.table-container {
+  overflow-x: auto;
+  margin-bottom: 15px !important;
+  margin-top: 10px !important;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+/* Code block container */
+.code-block-container {
+  margin-bottom: 15px !important;
+  margin-top: 10px !important;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+/* First element spacing */
+.article-content > * {
+  margin-bottom: 15px !important;
+  margin-top: 10px !important;
+}
+
+/* Last element spacing */
+.article-content > *:last-child {
+  margin-bottom: 0;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+  .article-content h3 {
+    font-size: 1.25rem;
+  }
+
+  .article-content p {
+    font-size: 0.9375rem;
+  }
+
+  .table-container {
+    margin: 1rem 0;
+  }
+
+  .article-table th,
+  .article-table td {
+    padding: 0.5rem 0.75rem;
+  }
+}
