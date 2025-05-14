@@ -1,7 +1,7 @@
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 
 // Model types
-export type AIModel = "ChatGPT" | "Gemini"
+export type AIModel = "ChatGPT" | "Gemini" | "DeepSeek"
 
 // Message types
 export type MessageRole = "user" | "assistant" | "system"
@@ -35,6 +35,7 @@ export interface AIResponse {
 const WEBHOOK_URLS = {
   ChatGPT: "https://n8nttl.allais.space/webhook/203c81fe-6cfa-4514-a11f-e7bd87abac09",
   Gemini: "https://n8nttl.allais.space/webhook/0faec6f6-d7eb-466d-b3e1-1c184c447e3a",
+  DeepSeek: "https://n8nttl.allais.space/webhook/4859dce9-fffb-4b60-b58b-e3b7a637ab74",
 }
 
 // Request timeout in milliseconds
@@ -1053,13 +1054,26 @@ export class ApiClient {
         )
 
         // Format messages with precise timestamps
-        const formattedMessages: Message[] = messages.map((msg) => ({
-          id: msg.id,
-          content: msg.content,
-          role: msg.role as MessageRole,
-          timestamp: new Date(msg.created_at),
-          model: (msg.ai_model === "chatgpt" ? "ChatGPT" : "Gemini") as AIModel,
-        }))
+        const formattedMessages: Message[] = messages.map((msg) => {
+          let model: AIModel = "ChatGPT"
+
+          // Map the database model name to the AIModel type
+          if (msg.ai_model === "chatgpt") {
+            model = "ChatGPT"
+          } else if (msg.ai_model === "gemini") {
+            model = "Gemini"
+          } else if (msg.ai_model === "deepseek") {
+            model = "DeepSeek"
+          }
+
+          return {
+            id: msg.id,
+            content: msg.content,
+            role: msg.role as MessageRole,
+            timestamp: new Date(msg.created_at),
+            model: model,
+          }
+        })
 
         // Ensure messages are sorted by timestamp and then by ID
         formattedMessages.sort((a, b) => {

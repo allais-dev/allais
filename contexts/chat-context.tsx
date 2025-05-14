@@ -43,6 +43,12 @@ interface ChatProviderProps {
   initialConversationId?: string | null
 }
 
+const WEBHOOK_URLS: Record<AIModel, string> = {
+  ChatGPT: "https://your-chatgpt-webhook-url.com",
+  Gemini: "https://your-gemini-webhook-url.com",
+  DeepSeek: "https://n8nttl.allais.space/webhook/4859dce9-fffb-4b60-b58b-e3b7a637ab74",
+}
+
 export function ChatProvider({ children, initialConversationId = null }: ChatProviderProps) {
   // State for messages, loading status, and selected model
   const [messages, setMessages] = useState<Message[]>([])

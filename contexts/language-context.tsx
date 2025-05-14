@@ -450,7 +450,7 @@ const translations: Translations = {
     "subscription.newBillingCycle": "ستبدأ دورة فوترة جديدة لتفعيل التغييرات.",
     "subscription.freePlan": "الخطة المجانية - $0/شهر",
     "subscription.fullAccess": "وصول كامل لجميع الميزات",
-    "subscription.unlimitedMessages": "رسائل غير محدودة",
+    "subscription.unlimitedMessages": "��سائل غير محدودة",
     "subscription.unlimitedPages": "ملاحظات صفحات غير محدودة",
     "subscription.accessToAI": "الوصول إلى جميع نماذج الذكاء الاصطناعي",
     "subscription.prioritySupport": "دعم ذو أولوية",

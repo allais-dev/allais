@@ -210,7 +210,15 @@ function MessageDisplay({ message }: { message: any }) {
           </ErrorBoundary>
           <div className="mt-1 flex justify-end">
             {message.model && (
-              <span className={`text-[10px] ${message.model === "ChatGPT" ? "text-green-400" : "text-blue-400"}`}>
+              <span
+                className={`text-[10px] ${
+                  message.model === "ChatGPT"
+                    ? "text-green-400"
+                    : message.model === "Gemini"
+                      ? "text-blue-400"
+                      : "text-purple-400"
+                }`}
+              >
                 {message.model}
               </span>
             )}
@@ -1006,13 +1014,29 @@ function ChatInput() {
               {dir === "rtl" ? (
                 <>
                   <ChevronDown className={`h-4 w-4 ${isInputDisabled ? "text-gray-600" : "text-gray-400"}`} />
-                  <span className={selectedModel === "ChatGPT" ? "text-green-400" : "text-blue-400"}>
+                  <span
+                    className={
+                      selectedModel === "ChatGPT"
+                        ? "text-green-400"
+                        : selectedModel === "Gemini"
+                          ? "text-blue-400"
+                          : "text-purple-400"
+                    }
+                  >
                     {selectedModel}
                   </span>
                 </>
               ) : (
                 <>
-                  <span className={selectedModel === "ChatGPT" ? "text-green-400" : "text-blue-400"}>
+                  <span
+                    className={
+                      selectedModel === "ChatGPT"
+                        ? "text-green-400"
+                        : selectedModel === "Gemini"
+                          ? "text-blue-400"
+                          : "text-purple-400"
+                    }
+                  >
                     {selectedModel}
                   </span>
                   <ChevronDown className={`h-4 w-4 ${isInputDisabled ? "text-gray-600" : "text-gray-400"}`} />
@@ -1044,6 +1068,15 @@ function ChatInput() {
               style={{ background: "#1a1a1a !important" }}
             >
               Gemini
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() => setSelectedModel("DeepSeek")}
+              className={`cursor-pointer ${
+                selectedModel === "DeepSeek" ? "bg-[#1a1a1a]/40 text-purple-400" : ""
+              } hover:bg-[#333] focus:bg-[#333]`}
+              style={{ background: "#1a1a1a !important" }}
+            >
+              DeepSeek
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -1181,7 +1214,15 @@ function ChatInput() {
                       }`}
                       style={{ background: "#1a1a1a !important" }}
                     >
-                      <span className={selectedModel === "ChatGPT" ? "text-green-400" : "text-blue-400"}>
+                      <span
+                        className={
+                          selectedModel === "ChatGPT"
+                            ? "text-green-400"
+                            : selectedModel === "Gemini"
+                              ? "text-blue-400"
+                              : "text-purple-400"
+                        }
+                      >
                         {selectedModel}
                       </span>
                       <ChevronDown className={`h-4 w-4 ${isInputDisabled ? "text-gray-600" : "text-gray-400"}`} />
@@ -1211,6 +1252,15 @@ function ChatInput() {
                       style={{ background: "#1a1a1a !important" }}
                     >
                       Gemini
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => setSelectedModel("DeepSeek")}
+                      className={`cursor-pointer ${
+                        selectedModel === "DeepSeek" ? "bg-[#1a1a1a]/40 text-purple-400" : ""
+                      } hover:bg-[#333] focus:bg-[#333]`}
+                      style={{ background: "#1a1a1a !important" }}
+                    >
+                      DeepSeek
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
