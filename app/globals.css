@@ -1025,11 +1025,19 @@ div[class*="layout-container"] {
 }
 
 /* More targeted background color rules */
-[style*="background-color"]:not(.message-bubble):not([class*="bg-[#1a1a1a]"]),
-[style*="background:#"]:not(.message-bubble):not([class*="bg-[#1a1a1a]"]),
-[style*="background: #"]:not(.message-bubble):not([class*="bg-[#1a1a1a]"]),
-[style*="background-color:#"]:not(.message-bubble):not([class*="bg-[#1a1a1a]"]),
-[style*="background-color: #"]:not(.message-bubble):not([class*="bg-[#1a1a1a]"]) {
+[style*="background-color"]:not(.message-bubble):not([class*="bg-[#1a1a1a]"]):not(.bg-blue-600):not(
+    [class*="bg-blue-600"]
+  ),
+[style*="background:#"]:not(.message-bubble):not([class*="bg-[#1a1a1a]"]):not(.bg-blue-600):not([class*="bg-blue-600"]),
+[style*="background: #"]:not(.message-bubble):not([class*="bg-[#1a1a1a]"]):not(.bg-blue-600):not(
+    [class*="bg-blue-600"]
+  ),
+[style*="background-color:#"]:not(.message-bubble):not([class*="bg-[#1a1a1a]"]):not(.bg-blue-600):not(
+    [class*="bg-blue-600"]
+  ),
+[style*="background-color: #"]:not(.message-bubble):not([class*="bg-[#1a1a1a]"]):not(.bg-blue-600):not(
+    [class*="bg-blue-600"]
+  ) {
   background-color: #141414 !important;
 }
 
@@ -1038,7 +1046,9 @@ div[class*="layout-container"] {
     .message-bubble
   ):not(.suggestion-card):not(.bg-indigo-600):not(.bg-indigo-700):not(.bg-indigo-800):not([class*="bg-indigo-600"]):not(
     [class*="bg-indigo-700"]
-  ):not([class*="bg-indigo-800"]):not(.hover\:bg-[#333]):not([class*="hover:bg-[#333]"]) {
+  ):not([class*="bg-indigo-800"]):not(.hover\:bg-[#333]):not([class*="hover:bg-[#333]"]):not(.bg-blue-600):not(
+    [class*="bg-blue-600"]
+  ):not(.bg-blue-700):not([class*="bg-blue-700"]) {
   background-color: #141414 !important;
 }
 
@@ -1995,4 +2005,12 @@ code {
   .article-table td {
     padding: 0.5rem 0.75rem;
   }
+}
+
+/* Ensure user message bubbles have the correct background color */
+.bg-blue-600,
+[class*="bg-blue-600"],
+.bg-blue-700,
+[class*="bg-blue-700"] {
+  background-color: rgb(37 99 235) !important;
 }
