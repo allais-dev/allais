@@ -2014,3 +2014,29 @@ code {
 [class*="bg-blue-700"] {
   background-color: rgb(37 99 235) !important;
 }
+
+/* Add this at the end of the file, after the user message bubble styles */
+
+/* Ensure assistant message bubbles have the correct background color */
+.bg-[#1a1a1a].message-bubble,
+div[class*="bg-[#1a1a1a]"].message-bubble {
+  background-color: #1a1a1a !important;
+  padding: 12px 15px;
+}
+
+.message-bubble .whitespace-pre-wrap {
+  white-space: pre-wrap;
+}
+
+/* Make sure both user and assistant message bubbles have proper styling */
+.message-bubble {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+/* Ensure text inside message bubbles is properly styled */
+.message-bubble .text-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
