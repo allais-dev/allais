@@ -65,7 +65,7 @@ const translations: Translations = {
     "chat.upgradeToSendMore": "Upgrade to send more messages",
     "chat.somethingWentWrong": "Something went wrong",
     "chat.offlineWarning": "You are offline. Messages will be sent when you reconnect.",
-    "chat.aiInOnePlaceTitle": "ChatGPT & Gemini in One Place",
+    "chat.aiInOnePlaceTitle": "ChatGPT, Gemini & DeepSeek.",
     "chat.askMeAnything": "Ask me anything",
     "chat.processingRequest": "Processing your request...",
 
@@ -338,7 +338,7 @@ const translations: Translations = {
     "chat.upgradeToSendMore": "قم بالترقية لإرسال المزيد من الرسائل",
     "chat.somethingWentWrong": "حدث خطأ ما",
     "chat.offlineWarning": "أنت غير متصل بالإنترنت. سيتم إرسال الرسائل عند إعادة الاتصال.",
-    "chat.aiInOnePlaceTitle": "ChatGPT و Gemini في مكان واحد",
+    "chat.aiInOnePlaceTitle": "ChatGPT, Gemini & DeepSeek",
     "chat.askMeAnything": "اسألني أي شيء",
     "chat.processingRequest": "جاري معالجة طلبك...",
 
@@ -439,7 +439,7 @@ const translations: Translations = {
 
     // Subscription
     "subscription.title": "خطط الاشتراك",
-    "subscription.current": "الخطة الحالية",
+    "subscription.current": "الخط�� الحالية",
     "subscription.upgrade": "ترقية",
     "subscription.downgrade": "تخفيض",
     "subscription.cancel": "إلغاء الاشتراك",
@@ -450,7 +450,7 @@ const translations: Translations = {
     "subscription.newBillingCycle": "ستبدأ دورة فوترة جديدة لتفعيل التغييرات.",
     "subscription.freePlan": "الخطة المجانية - $0/شهر",
     "subscription.fullAccess": "وصول كامل لجميع الميزات",
-    "subscription.unlimitedMessages": "��سائل غير محدودة",
+    "subscription.unlimitedMessages": "رسائل غير محدودة",
     "subscription.unlimitedPages": "ملاحظات صفحات غير محدودة",
     "subscription.accessToAI": "الوصول إلى جميع نماذج الذكاء الاصطناعي",
     "subscription.prioritySupport": "دعم ذو أولوية",
